@@ -1,7 +1,7 @@
 import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
 import { CreateAuthService } from "./auth/AuthService";
-import { CreateInMemoryUserRepository } from "./auth/InMemoryUserRepository";
+import { CreateInMemoryUserRepository } from "./repository/InMemoryUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
 import type { IApp } from "./contracts";

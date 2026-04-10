@@ -10,7 +10,7 @@ import {
   type AuthError,
 } from "./errors";
 import { toUserSummary, type IUserSummary, type UserRole } from "./User";
-import type { IUserRepository } from "./UserRepository";
+import type { IUserRepository } from "../repository/UserRepository";
 
 export interface CreateUserInput {
   email: string;

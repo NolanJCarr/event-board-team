@@ -7,7 +7,7 @@ import {
 } from "./errors";
 import type { IPasswordHasher } from "./PasswordHasher";
 import { toAuthenticatedUser, type IAuthenticatedUser } from "./User";
-import type { IUserRepository } from "./UserRepository";
+import type { IUserRepository } from "../repository/UserRepository";
 
 export interface LoginInput {
   email: string;
