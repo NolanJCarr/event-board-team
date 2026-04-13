@@ -9,6 +9,7 @@ import {
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
 import { IApp } from "./contracts";
+import type { IRSVPController } from "./rsvp/RSVPController";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -35,6 +36,7 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    private readonly rsvpController: IRSVPController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -253,6 +255,16 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── RSVP routes ──────────────────────────────────────────────────
+
+    this.app.post(
+      "/events/:eventId/rsvp",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.rsvpController.toggleRSVP(req, res, sessionStore(req));
+      }),
+    );
+
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
@@ -272,7 +284,8 @@ class ExpressApp implements IApp {
 
 export function CreateApp(
   authController: IAuthController,
+  rsvpController: IRSVPController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, rsvpController, logger);
 }
