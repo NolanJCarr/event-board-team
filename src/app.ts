@@ -9,6 +9,7 @@ import {
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
 import { IApp } from "./contracts";
+import type { IRSVPController } from "./rsvp/RSVPController";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -37,6 +38,7 @@ class ExpressApp implements IApp {
   constructor(
     private readonly authController: IAuthController,
     // eventController was added so the app can have access to the events feature.
+    private readonly rsvpController: IRSVPController,
     private readonly eventController: IEventController,
     private readonly logger: ILoggingService,
   ) {
@@ -268,6 +270,16 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── RSVP routes ──────────────────────────────────────────────────
+
+    this.app.post(
+      "/events/:eventId/rsvp",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.rsvpController.toggleRSVP(req, res, sessionStore(req));
+      }),
+    );
+
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
@@ -288,8 +300,9 @@ class ExpressApp implements IApp {
 export function CreateApp(
   authController: IAuthController,
   // eventController was added here to match the constructor.
+  rsvpController: IRSVPController,
   eventController: IEventController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, eventController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, logger);
 }
