@@ -272,6 +272,14 @@ class ExpressApp implements IApp {
 
     // ── RSVP routes ──────────────────────────────────────────────────
 
+    this.app.get(
+      "/my-rsvps",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["user"], "Only members can view the RSVP dashboard.")) return;
+        await this.rsvpController.showMyRSVPs(req, res, sessionStore(req));
+      }),
+    );
+
     this.app.post(
       "/events/:eventId/rsvp",
       asyncHandler(async (req, res) => {

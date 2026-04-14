@@ -18,6 +18,7 @@ export interface IRSVPRepository {
 
   // ── RSVP records ─────────────────────────────────────────────────────────────
   findRSVP(userId: string, eventId: string): Promise<Result<RSVPRecord | null, RSVPError>>;
+  findAllByUser(userId: string): Promise<Result<RSVPRecord[], RSVPError>>;
   saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>>;
   countAttendees(eventId: string): Promise<Result<number, RSVPError>>;
 

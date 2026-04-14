@@ -42,6 +42,17 @@ class InMemoryRSVPRepository implements IRSVPRepository {
     }
   }
 
+  async findAllByUser(userId: string): Promise<Result<RSVPRecord[], RSVPError>> {
+    try {
+      const records = Array.from(this.rsvps.values()).filter(
+        (r) => r.userId === userId,
+      );
+      return Ok(records);
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to fetch RSVPs for user."));
+    }
+  }
+
   async saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>> {
     try {
       this.rsvps.set(this.recordKey(record.userId, record.eventId), record);

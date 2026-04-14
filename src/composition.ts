@@ -10,6 +10,7 @@ import type { ILoggingService } from "./service/LoggingService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
 import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
+import { CreateInMemoryEventRepository } from "./events/InMemoryEventRepository";
 // The event imports are factory functions for the event features.
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
@@ -25,9 +26,12 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
+  // Event repository (used by RSVPService for dashboard lookups; extended by event features)
+  const eventRepository = CreateInMemoryEventRepository();
+
   // RSVP wiring
   const rsvpRepository = CreateInMemoryRSVPRepository();
-  const rsvpService = CreateRSVPService(rsvpRepository);
+  const rsvpService = CreateRSVPService(rsvpRepository, eventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
   // Event wiring
