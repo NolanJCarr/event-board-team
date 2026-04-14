@@ -6,6 +6,7 @@ import {
   type RSVPError,
 } from "../rsvp/errors";
 import type { IRSVPRepository, RSVPRecord } from "../repository/RSVPRepository";
+import type { IEventRepository, AppEvent } from "../events/EventRepository";
 import type { UserRole } from "../auth/User";
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,18 @@ export type RSVPOutcome = "going" | "waitlisted" | "cancelled";
 export interface RSVPActor {
   userId: string;
   role: UserRole;
+}
+
+export interface RSVPWithEvent {
+  rsvp: RSVPRecord;
+  event: AppEvent;
+}
+
+export interface MyRSVPsDashboard {
+  /** Active RSVPs (going/waitlisted) for events that haven't started yet, sorted soonest first. */
+  upcoming: RSVPWithEvent[];
+  /** Cancelled RSVPs or RSVPs for events that have already started, sorted most recent first. */
+  pastAndCancelled: RSVPWithEvent[];
 }
 
 // ---------------------------------------------------------------------------
@@ -42,6 +55,12 @@ export interface IRSVPService {
    * Rejects organizers (staff) and admins.
    */
   toggleRSVP(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome, RSVPError>>;
+
+  /**
+   * Return the authenticated user's RSVP dashboard, grouped into upcoming and
+   * past/cancelled sections. Only accessible to members (role "user").
+   */
+  getMyRSVPs(actor: RSVPActor, now?: Date): Promise<Result<MyRSVPsDashboard, RSVPError>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,7 +68,10 @@ export interface IRSVPService {
 // ---------------------------------------------------------------------------
 
 class RSVPService implements IRSVPService {
-  constructor(private readonly repository: IRSVPRepository) {}
+  constructor(
+    private readonly repository: IRSVPRepository,
+    private readonly eventRepository: IEventRepository,
+  ) {}
 
   async registerEvent(eventId: string, capacity: number): Promise<Result<void, RSVPError>> {
     return this.repository.setCapacity(eventId, capacity);
@@ -163,12 +185,49 @@ class RSVPService implements IRSVPService {
     const outcome: RSVPOutcome = "cancelled";
     return Ok(outcome);
   }
+
+  async getMyRSVPs(actor: RSVPActor, now: Date = new Date()): Promise<Result<MyRSVPsDashboard, RSVPError>> {
+    if (actor.role === "admin" || actor.role === "staff") {
+      return Err(UnauthorizedError("Only members can view the RSVP dashboard."));
+    }
+
+    const recordsResult = await this.repository.findAllByUser(actor.userId);
+    if (recordsResult.ok === false) {
+      return Err(UnexpectedDependencyError(recordsResult.value.message));
+    }
+
+    const upcoming: RSVPWithEvent[] = [];
+    const pastAndCancelled: RSVPWithEvent[] = [];
+
+    for (const rsvp of recordsResult.value) {
+      const event = await this.eventRepository.findById(rsvp.eventId);
+      // Skip RSVPs whose event no longer exists (data consistency guard)
+      if (!event) continue;
+
+      const isActiveStatus = rsvp.status === "going" || rsvp.status === "waitlisted";
+      const isFuture = event.startTime > now;
+
+      if (isActiveStatus && isFuture) {
+        upcoming.push({ rsvp, event });
+      } else {
+        pastAndCancelled.push({ rsvp, event });
+      }
+    }
+
+    upcoming.sort((a, b) => a.event.startTime.getTime() - b.event.startTime.getTime());
+    pastAndCancelled.sort((a, b) => b.event.startTime.getTime() - a.event.startTime.getTime());
+
+    return Ok({ upcoming, pastAndCancelled });
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function CreateRSVPService(repository: IRSVPRepository): IRSVPService {
-  return new RSVPService(repository);
+export function CreateRSVPService(
+  repository: IRSVPRepository,
+  eventRepository: IEventRepository,
+): IRSVPService {
+  return new RSVPService(repository, eventRepository);
 }
