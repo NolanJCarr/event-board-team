@@ -18,6 +18,7 @@ import {
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventService } from "./event/EventService";
+import { IDashboardService } from "./event/DashboardService";
 import type { EventError } from "./event/errors";
 
 type AsyncRequestHandler = RequestHandler;
@@ -39,6 +40,7 @@ class ExpressApp implements IApp {
     private readonly authController: IAuthController,
     private readonly logger: ILoggingService,
     private readonly eventService: IEventService,
+    private readonly dashboardService: IDashboardService,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -279,6 +281,57 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── Dashboard ────────────────────────────────────────────────────
+
+    this.app.get(
+      "/dashboard",
+      asyncHandler(async (req, res) => {
+        this.logger.info("GET /dashboard");
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const store = sessionStore(req);
+        const browserSession = recordPageView(store);
+        const user = getAuthenticatedUser(store);
+
+        const result = this.dashboardService.getOrganizerEvents({
+          userId: user?.userId ?? "",
+          role: user?.role ?? "",
+        });
+
+        if (!result.ok) {
+          const status = result.value.name === "UnauthorizedError" ? 403 : 500;
+          if (this.isHtmxRequest(req)) {
+            res.status(status).render("partials/error", {
+              message: result.value.message,
+              layout: false,
+            });
+          } else {
+            res.status(status).render("dashboard", {
+              session: browserSession,
+              dashboard: null,
+              pageError: result.value.message,
+            });
+          }
+          return;
+        }
+
+        if (this.isHtmxRequest(req)) {
+          res.render("partials/dashboard", {
+            dashboard: result.value,
+            layout: false,
+          });
+        } else {
+          res.render("dashboard", {
+            session: browserSession,
+            dashboard: result.value,
+            pageError: null,
+          });
+        }
+      }),
+    );
+
     // ── Authenticated home page ──────────────────────────────────────
     // TODO: Replace this placeholder with your project's main page.
 
@@ -316,6 +369,7 @@ export function CreateApp(
   authController: IAuthController,
   logger: ILoggingService,
   eventService: IEventService,
+  dashboardService: IDashboardService,
 ): IApp {
-  return new ExpressApp(authController, logger, eventService);
+  return new ExpressApp(authController, logger, eventService, dashboardService);
 }

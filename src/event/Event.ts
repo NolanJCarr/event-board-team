@@ -12,3 +12,7 @@ export interface IEvent {
   status: EventStatus;
   organizerId: string;
 }
+
+export interface IEventWithCounts extends IEvent {
+  attendeeCount: number; // count of RSVPs with status "going"
+}
