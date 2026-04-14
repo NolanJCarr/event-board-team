@@ -11,12 +11,13 @@ import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
 import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
 import { CreateInMemoryEventRepository } from "./events/InMemoryEventRepository";
+// The event imports are factory functions for the event features.
+import { CreateEventService } from "./service/EventService";
+import { CreateEventController } from "./events/EventController";
+import { CreateInMemoryEventRepository } from "./repository/InMemoryEventRepository";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
-
-  // Database client
-  const prisma = new PrismaClient();
 
   // Authentication & authorization wiring
   const authUsers = CreateInMemoryUserRepository();
@@ -33,5 +34,10 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const rsvpService = CreateRSVPService(rsvpRepository, eventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
-  return CreateApp(authController, rsvpController, resolvedLogger);
+  // Event wiring
+  const eventRepository = CreateInMemoryEventRepository();
+  const eventService = CreateEventService(eventRepository);
+  const eventController = CreateEventController(eventService, resolvedLogger);
+
+  return CreateApp(authController, rsvpController, eventController, resolvedLogger);
 }

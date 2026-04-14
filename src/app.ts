@@ -37,7 +37,9 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
+    private readonly eventController: IEventController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -246,6 +248,8 @@ class ExpressApp implements IApp {
       "/events",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
+        // A user must be logged in to see the events.
+        // It is handed to the event controller for the rest.
         await this.eventController.showEvents(req, res);
       }),
     );
@@ -303,8 +307,10 @@ class ExpressApp implements IApp {
 
 export function CreateApp(
   authController: IAuthController,
+  // eventController was added here to match the constructor.
   rsvpController: IRSVPController,
+  eventController: IEventController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, logger);
 }

@@ -1,11 +1,9 @@
-export type { AppEvent } from "./Event";
-import type { AppEvent } from "./Event";
+import type { Event } from "./Event";
 
-/**
- * Persistence contract for events.
- * Feature 7 (My RSVPs Dashboard) uses findById.
- * Features 1/2/3/5 (Haamed/Dylan) will extend this interface with create, update, etc.
- */
 export interface IEventRepository {
-  findById(id: string): Promise<AppEvent | null>;
+  create(event: Omit<Event, "id" | "createdAt" | "updatedAt">): Promise<Event>;
+  findById(id: string): Promise<Event | null>;
+  findAll(): Promise<Event[]>;
+  update(id: string, updates: Partial<Event>): Promise<Event | null>;
+  findByOrganizerId(organizerId: string): Promise<Event[]>;
 }

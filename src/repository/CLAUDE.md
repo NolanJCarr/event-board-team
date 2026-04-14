@@ -16,6 +16,15 @@ Persistence contracts and in-memory implementations for the data layer. The repo
 |---|---|
 | `UserRepository.ts` | `IUserRepository` interface — the persistence contract for users |
 | `InMemoryUserRepository.ts` | In-memory impl seeded with `DEMO_USERS`; swap for Prisma impl in Sprint 3 |
+| `EventRepository.ts` | `IEventRepository` interface (filter-based `getEvents`), error types, `GetEventsFilter`, and Prisma-backed impl |
+| `InMemoryEventRepository.ts` | In-memory impl of the filter-based `IEventRepository`; used by `EventService` |
+| `InMemoryRSVPRepository.ts` | In-memory impl of `IRSVPRepository`; used by `RSVPService` |
+
+> **Note — two event repository interfaces exist:**
+> - `src/repository/EventRepository.ts` — filter-based `getEvents(filter)` returning `Result<Event[], EventError>`. This is what `EventService` depends on.
+> - `src/events/EventRepository.ts` — full CRUD interface (`create`, `findById`, `findAll`, `update`, `findByOrganizerId`). Used by event creation/editing features.
+>
+> `src/repository/InMemoryEventRepository.ts` implements the **filter-based** interface. `src/events/InMemoryEventRepository.ts` implements the **CRUD** interface. Do not confuse them.
 
 ## DEMO_USERS seed (InMemoryUserRepository)
 Seeds three roles (`admin`, `staff`, `user`) for local development. Passwords stored as `salt:hash` (scrypt via `auth/PasswordHasher.ts`).
@@ -30,10 +39,3 @@ Seeds three roles (`admin`, `staff`, `user`) for local development. Passwords st
 ## Sprint 3 Migration
 
 When switching to Prisma, implement the **same** `IFooRepository` interface backed by the Prisma client. Swap the factory call in `composition.ts`. The service and controller layers must not change — if they do, the layers were not properly separated.
-
-## Upcoming Repositories
-
-| Repository | Feature | Owner |
-|---|---|---|
-| `InMemoryEventRepository` | Event Creation (#1), Detail (#2), Editing (#3), Publishing (#5) | Haamed / Dylan |
-| `InMemoryRSVPRepository` | RSVP Toggle (#4), Waitlist Promotion (#9), My RSVPs (#7) | Nolan / Emily |
