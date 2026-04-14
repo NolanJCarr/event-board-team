@@ -10,11 +10,12 @@ import type { ILoggingService } from "./service/LoggingService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
 import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
-import { CreateInMemoryEventRepository } from "./events/InMemoryEventRepository";
-// The event imports are factory functions for the event features.
+// CRUD event repo — used by RSVPService (findById) and event creation/editing features
+import { InMemoryEventRepository } from "./events/InMemoryEventRepository";
+// Filter event repo — used by EventService (getEvents with category/timeframe/search)
+import { CreateInMemoryEventRepository as CreateFilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
-import { CreateInMemoryEventRepository } from "./repository/InMemoryEventRepository";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
@@ -26,17 +27,17 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
-  // Event repository (used by RSVPService for dashboard lookups; extended by event features)
-  const eventRepository = CreateInMemoryEventRepository();
+  // Event repository — CRUD (findById used by RSVP dashboard; create/update used by event features)
+  const crudEventRepository = new InMemoryEventRepository();
 
   // RSVP wiring
   const rsvpRepository = CreateInMemoryRSVPRepository();
-  const rsvpService = CreateRSVPService(rsvpRepository, eventRepository);
+  const rsvpService = CreateRSVPService(rsvpRepository, crudEventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
-  // Event wiring
-  const eventRepository = CreateInMemoryEventRepository();
-  const eventService = CreateEventService(eventRepository);
+  // Event wiring — filter repo powers the search/category/timeframe feature
+  const filterEventRepository = CreateFilterEventRepository();
+  const eventService = CreateEventService(filterEventRepository);
   const eventController = CreateEventController(eventService, resolvedLogger);
 
   return CreateApp(authController, rsvpController, eventController, resolvedLogger);

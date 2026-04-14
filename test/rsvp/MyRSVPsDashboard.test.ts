@@ -1,13 +1,13 @@
 import { CreateRSVPService } from "../../src/service/RSVPService";
 import { CreateInMemoryRSVPRepository } from "../../src/repository/InMemoryRSVPRepository";
-import { CreateInMemoryEventRepository } from "../../src/events/InMemoryEventRepository";
-import type { AppEvent } from "../../src/events/Event";
+import { InMemoryEventRepository } from "../../src/events/InMemoryEventRepository";
+import type { Event } from "../../src/events/Event";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeEvent(overrides: Partial<AppEvent> & { id: string; startTime: Date }): AppEvent {
+function makeEvent(overrides: Partial<Event> & { id: string; startTime: Date }): Event {
   return {
     title: "Test Event",
     description: "A test event",
@@ -38,7 +38,7 @@ const PAST   = new Date("2026-03-01T18:00:00Z");
 describe("RSVPService.getMyRSVPs", () => {
   it("returns an empty dashboard when the user has no RSVPs", async () => {
     const rsvpRepo = CreateInMemoryRSVPRepository();
-    const eventRepo = CreateInMemoryEventRepository();
+    const eventRepo = new InMemoryEventRepository();
     const service = CreateRSVPService(rsvpRepo, eventRepo);
 
     const result = await service.getMyRSVPs(MEMBER, NOW);
@@ -51,7 +51,7 @@ describe("RSVPService.getMyRSVPs", () => {
   });
 
   it("rejects admin actors", async () => {
-    const service = CreateRSVPService(CreateInMemoryRSVPRepository(), CreateInMemoryEventRepository());
+    const service = CreateRSVPService(CreateInMemoryRSVPRepository(), new InMemoryEventRepository());
 
     const result = await service.getMyRSVPs(ADMIN, NOW);
 
@@ -62,7 +62,7 @@ describe("RSVPService.getMyRSVPs", () => {
   });
 
   it("rejects staff actors", async () => {
-    const service = CreateRSVPService(CreateInMemoryRSVPRepository(), CreateInMemoryEventRepository());
+    const service = CreateRSVPService(CreateInMemoryRSVPRepository(), new InMemoryEventRepository());
 
     const result = await service.getMyRSVPs(STAFF, NOW);
 
@@ -74,7 +74,7 @@ describe("RSVPService.getMyRSVPs", () => {
 
   it("places an active RSVP for a future event in upcoming", async () => {
     const rsvpRepo = CreateInMemoryRSVPRepository();
-    const eventRepo = CreateInMemoryEventRepository();
+    const eventRepo = new InMemoryEventRepository();
     const futureEvent = makeEvent({ id: "evt-1", startTime: FUTURE });
     eventRepo.seed([futureEvent]);
 
@@ -96,7 +96,7 @@ describe("RSVPService.getMyRSVPs", () => {
 
   it("places an active RSVP for a past event in pastAndCancelled", async () => {
     const rsvpRepo = CreateInMemoryRSVPRepository();
-    const eventRepo = CreateInMemoryEventRepository();
+    const eventRepo = new InMemoryEventRepository();
     const pastEvent = makeEvent({ id: "evt-past", startTime: PAST });
     eventRepo.seed([pastEvent]);
 
@@ -116,7 +116,7 @@ describe("RSVPService.getMyRSVPs", () => {
 
   it("places a cancelled RSVP for a future event in pastAndCancelled", async () => {
     const rsvpRepo = CreateInMemoryRSVPRepository();
-    const eventRepo = CreateInMemoryEventRepository();
+    const eventRepo = new InMemoryEventRepository();
     const futureEvent = makeEvent({ id: "evt-2", startTime: FUTURE });
     eventRepo.seed([futureEvent]);
 
@@ -137,7 +137,7 @@ describe("RSVPService.getMyRSVPs", () => {
 
   it("sorts upcoming events soonest first", async () => {
     const rsvpRepo = CreateInMemoryRSVPRepository();
-    const eventRepo = CreateInMemoryEventRepository();
+    const eventRepo = new InMemoryEventRepository();
     const soon   = makeEvent({ id: "evt-soon",  startTime: new Date("2026-05-01T10:00:00Z") });
     const later  = makeEvent({ id: "evt-later", startTime: new Date("2026-07-01T10:00:00Z") });
     eventRepo.seed([later, soon]); // seeded out of order intentionally
@@ -159,7 +159,7 @@ describe("RSVPService.getMyRSVPs", () => {
 
   it("sorts pastAndCancelled events most recent first", async () => {
     const rsvpRepo = CreateInMemoryRSVPRepository();
-    const eventRepo = CreateInMemoryEventRepository();
+    const eventRepo = new InMemoryEventRepository();
     const older  = makeEvent({ id: "evt-older", startTime: new Date("2026-01-01T10:00:00Z") });
     const recent = makeEvent({ id: "evt-recent", startTime: new Date("2026-03-15T10:00:00Z") });
     eventRepo.seed([older, recent]);
@@ -181,7 +181,7 @@ describe("RSVPService.getMyRSVPs", () => {
 
   it("silently skips RSVPs whose event is not found (data consistency edge case)", async () => {
     const rsvpRepo = CreateInMemoryRSVPRepository();
-    const eventRepo = CreateInMemoryEventRepository();
+    const eventRepo = new InMemoryEventRepository();
     // Register the event so the RSVP can be created, but don't seed it in eventRepo
     const service = CreateRSVPService(rsvpRepo, eventRepo);
     await service.registerEvent("evt-ghost", 10);

@@ -6,7 +6,7 @@ import {
   type RSVPError,
 } from "../rsvp/errors";
 import type { IRSVPRepository, RSVPRecord } from "../repository/RSVPRepository";
-import type { IEventRepository, AppEvent } from "../events/EventRepository";
+import type { IEventRepository, Event } from "../events/EventRepository";
 import type { UserRole } from "../auth/User";
 
 // ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ export interface RSVPActor {
 
 export interface RSVPWithEvent {
   rsvp: RSVPRecord;
-  event: AppEvent;
+  event: Event;
 }
 
 export interface MyRSVPsDashboard {

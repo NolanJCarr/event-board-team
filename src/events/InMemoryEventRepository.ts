@@ -5,6 +5,13 @@ export class InMemoryEventRepository implements IEventRepository {
   private events: Map<string, Event> = new Map();
   private idCounter = 1;
 
+  /** Seed events directly for testing. */
+  seed(events: Event[]): void {
+    for (const event of events) {
+      this.events.set(event.id, event);
+    }
+  }
+
   async create(event: Omit<Event, "id" | "createdAt" | "updatedAt">): Promise<Event> {
     const id = `evt_${this.idCounter++}`;
     const now = new Date();
