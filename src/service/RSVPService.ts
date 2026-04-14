@@ -187,10 +187,6 @@ class RSVPService implements IRSVPService {
   }
 
   async getMyRSVPs(actor: RSVPActor, now: Date = new Date()): Promise<Result<MyRSVPsDashboard, RSVPError>> {
-    if (actor.role === "admin" || actor.role === "staff") {
-      return Err(UnauthorizedError("Only members can view the RSVP dashboard."));
-    }
-
     const recordsResult = await this.repository.findAllByUser(actor.userId);
     if (recordsResult.ok === false) {
       return Err(UnexpectedDependencyError(recordsResult.value.message));
