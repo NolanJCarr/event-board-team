@@ -16,6 +16,8 @@ import { InMemoryEventRepository } from "./events/InMemoryEventRepository";
 import { CreateInMemoryEventRepository as CreateFilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
+import { CreateAttendeeListController} from "./attendee/AttendeeListController";
+import {CreateAttendeeListService} from "./attendee/AttendeeListService"
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
@@ -39,6 +41,9 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const filterEventRepository = CreateFilterEventRepository();
   const eventService = CreateEventService(filterEventRepository);
   const eventController = CreateEventController(eventService, resolvedLogger);
+  const attendeeListService = CreateAttendeeListService(crudEventRepository, rsvpRepository, authUsers,);
+  const attendeeListController = CreateAttendeeListController(attendeeListService, resolvedLogger,);
 
-  return CreateApp(authController, rsvpController, eventController, resolvedLogger);
+
+  return CreateApp(authController, rsvpController, eventController, attendeeListController, resolvedLogger);
 }
