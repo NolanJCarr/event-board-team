@@ -7,9 +7,16 @@ import { CreateApp } from "./app";
 import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
+import { CreateEventRepository } from "./repository/EventRepository";
+import { CreateEventService } from "./service/EventService";
+import { CreateEventController } from "./events/EventController";
+import { PrismaClient } from "@prisma/client";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
+
+  // Database client
+  const prisma = new PrismaClient();
 
   // Authentication & authorization wiring
   const authUsers = CreateInMemoryUserRepository();
@@ -18,5 +25,10 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
-  return CreateApp(authController, resolvedLogger);
+  // Event wiring
+  const eventRepository = CreateEventRepository(prisma);
+  const eventService = CreateEventService(eventRepository);
+  const eventController = CreateEventController(eventService, resolvedLogger);
+
+  return CreateApp(authController, eventController, resolvedLogger);
 }
