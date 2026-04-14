@@ -1,5 +1,4 @@
-import { Ok, Err, type Result} from "../lib/result";
-import type { PrismaClient } from "@prisma/client";
+import type { Result} from "../lib/result";
 // Below defines what an event object looks like. It matches exactly with the database schema. 
 export interface Event{
     id: string;
@@ -51,65 +50,3 @@ export interface IEventRepository {
     getEvents(filter: GetEventsFilter): Promise<Result<Event[], EventError>>;
 }
 
-class PrismaEventRepository implements IEventRepository{
-    constructor (private readonly prisma: PrismaClient){}
-    async getEvents(filter: GetEventsFilter): Promise<Result<Event[], EventError>>{
-        try{
-            //Current date and time
-            const now = new Date();
-            // Date boundaries are used for filtering
-            let startRange: Date | undefined;
-            let endRange: Date | undefined;
-            // If the timeframe is week, events will be found in the next 7 days. 
-            if (filter.timeframe === "week"){
-                startRange = now;
-                endRange = new Date(now);
-                endRange.setDate(endRange.getDate() + 7);
-            // If the timeframe is weekend, it finds Saturday and Sunday
-            } else if (filter.timeframe === "weekend"){
-                const day = now.getDay();
-                const daysUntilSaturday = (6- day + 7) % 7 || 7;
-                startRange = new Date(now);
-                startRange.setDate(now.getDate() + daysUntilSaturday);
-                startRange.setHours(0,0,0,0);
-                endRange = new Date(startRange);
-                endRange.setDate(startRange.getDate() + 1)
-                endRange.setHours(23,59,59,999);
-            }
-            // published events are only shown, not drafts
-            const events = await this.prisma.event.findMany({
-                where: {
-                  status: "published",
-                  // The event must start right now or before the range end
-                  startTime: {
-                    gte: startRange ?? now,
-                    ...(endRange ? { lte: endRange } : {}),
-                  },
-                  // If a category was passed, only show the events that are in that category.
-                  ...(filter.category ? { category: filter.category } : {}),
-                  ...(filter.searchQuery
-                    ? {
-                      // // If search was used, look for events with that word in the title, description or location
-                        OR: [
-                          { title: { contains: filter.searchQuery } },
-                          { description: { contains: filter.searchQuery } },
-                          { location: { contains: filter.searchQuery } },
-                        ],
-                      }
-                    : {}),
-                },
-                // show the soonest events first
-                orderBy: { startTime: "asc" },
-              });
-              // If it worked, the list of events can be returned
-              return Ok(events);
-              // If something went wrong, an error can be thrown.
-            } catch (e) {
-              return Err(InvalidInputError("Failed to query events."));
-            }
-          }
-        }
-        
-        export function CreateEventRepository(prisma: PrismaClient): IEventRepository {
-          return new PrismaEventRepository(prisma);
-        }
