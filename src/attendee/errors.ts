@@ -1,7 +1,3 @@
-/**
- * Mirrors the shape of RSVPError so mapErrorStatus can follow the
- * same `error.name` pattern used in RSVPController.
- */
 export class AttendeeListNotFoundError extends Error {
   readonly name = "AttendeeListNotFoundError" as const;
   constructor(public readonly eventId: string) {
