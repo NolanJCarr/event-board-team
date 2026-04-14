@@ -22,7 +22,7 @@ Route (app.ts)  →  Controller  →  Service  →  Repository
 | **Service** | All business logic. No knowledge of HTTP. Returns `Result<T, E>`. Receives acting-user identity as parameters — **never reads the session**. |
 | **Repository** | Data storage only. Sprint 1–2: in-memory. Sprint 3: Prisma. |
 
-**Composition root**: `composition.ts` wires all dependencies. All `new` calls and factory calls happen here — never inside controllers or services.
+**Composition root**: `composition.ts` wires all dependencies. All `new` calls and factory calls happen here — never inside controllers or services. Currently wired: `AuthController`, `RSVPController`, `EventController`. The `CreateApp` factory in `app.ts` accepts all three controllers plus the logger.
 
 ## Result Pattern (mandatory from Sprint 1)
 

@@ -10,12 +10,12 @@ import type { ILoggingService } from "./service/LoggingService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
 import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
+import { CreateEventController } from "./events/EventController";
+import { CreateEventService } from "./service/EventService";
+import { CreateInMemoryEventRepository } from "./repository/InMemoryEventRepository";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
-
-  // Database client
-  const prisma = new PrismaClient();
 
   // Authentication & authorization wiring
   const authUsers = CreateInMemoryUserRepository();
@@ -29,5 +29,10 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const rsvpService = CreateRSVPService(rsvpRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
-  return CreateApp(authController, rsvpController, resolvedLogger);
+  // Event wiring
+  const eventRepository = CreateInMemoryEventRepository();
+  const eventService = CreateEventService(eventRepository);
+  const eventController = CreateEventController(eventService, resolvedLogger);
+
+  return CreateApp(authController, rsvpController, eventController, resolvedLogger);
 }
