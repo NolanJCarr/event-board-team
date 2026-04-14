@@ -17,6 +17,8 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import { IEventService } from "./event/EventService";
+import type { EventError } from "./event/errors";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -36,6 +38,7 @@ class ExpressApp implements IApp {
   constructor(
     private readonly authController: IAuthController,
     private readonly logger: ILoggingService,
+    private readonly eventService: IEventService,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -237,6 +240,45 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        this.logger.info(`GET /events/${req.params.id}`);
+        const store = sessionStore(req);
+        const browserSession = recordPageView(store);
+        const user = getAuthenticatedUser(store);
+
+        const result = this.eventService.getEventById({
+          eventId: typeof req.params.id === "string" ? req.params.id : "",
+          userId: user?.userId ?? "",
+          role: user?.role ?? "",
+        });
+
+        if (!result.ok) {
+          const error = result.value as EventError;
+          const statusMap: Record<string, number> = {
+            EventNotFoundError: 404,
+            UnauthorizedError: 403,
+            InvalidInputError: 400,
+            InvalidStateError: 409,
+          };
+          const status = statusMap[error.name] ?? 500;
+          res.status(status).render("event/detail", {
+            session: browserSession,
+            event: null,
+            pageError: error.message,
+          });
+          return;
+        }
+
+        res.render("event/detail", {
+          session: browserSession,
+          event: result.value,
+          pageError: null,
+        });
+      }),
+    );
+
     // ── Authenticated home page ──────────────────────────────────────
     // TODO: Replace this placeholder with your project's main page.
 
@@ -273,6 +315,7 @@ class ExpressApp implements IApp {
 export function CreateApp(
   authController: IAuthController,
   logger: ILoggingService,
+  eventService: IEventService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, logger, eventService);
 }
