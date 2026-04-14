@@ -18,6 +18,7 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import { IEventController } from "./events/EventController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -236,6 +237,16 @@ class ExpressApp implements IApp {
           currentUser.userId,
           session,
         );
+      }),
+    );
+
+    // ── Events routes ────────────────────────────────────────────────
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.eventController.showEvents(req, res);
       }),
     );
 

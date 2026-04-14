@@ -14,6 +14,9 @@ import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepositor
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
 
+  // Database client
+  const prisma = new PrismaClient();
+
   // Authentication & authorization wiring
   const authUsers = CreateInMemoryUserRepository();
   const passwordHasher = CreatePasswordHasher();
