@@ -250,7 +250,7 @@ class ExpressApp implements IApp {
         if (!this.requireAuthenticated(req, res)) return;
         // A user must be logged in to see the events.
         // It is handed to the event controller for the rest.
-        await this.eventController.showEvents(req, res);
+        await this.eventController.showEvents(req, res, sessionStore(req));
       }),
     );
 
