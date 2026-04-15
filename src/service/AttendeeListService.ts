@@ -56,10 +56,10 @@ class AttendeeListService implements IAttendeeListService {
     }
 
     // ── 3. Fetch RSVPs ────────────────────────────────────────────────────────
-    const rsvpResult = await this.rsvps.listByEvent(eventId);
+    const rsvpResult = await this.rsvps.findAllByEvent(eventId);
 
     if (rsvpResult.ok === false) {
-      // listByEvent wraps its return in Result; a storage failure here is
+      // findAllByEvent wraps its return in Result; a storage failure here is
       // unrecoverable so we surface it as a 500-class domain error.
       return Err(new AttendeeListUserLookupError("(storage failure)"));
     }
