@@ -21,7 +21,7 @@ export interface IRSVPRepository {
   findAllByUser(userId: string): Promise<Result<RSVPRecord[], RSVPError>>;
   saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>>;
   countAttendees(eventId: string): Promise<Result<number, RSVPError>>;
-  listByEvent(eventId:string):Promise<Result<RSVPRecord[],RSVPError>>;
+  findAllByEvent(eventId:string):Promise<Result<RSVPRecord[],RSVPError>>;
 
   // ── Waitlist (ordered by insertion time) ─────────────────────────────────────
   addToWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>>;
