@@ -76,13 +76,17 @@ class InMemoryRSVPRepository implements IRSVPRepository {
     }
   }
 
-  async listByEvent(eventId: string): Promise<Result<RSVPRecord[], RSVPError>> {
-    const results: RSVPRecord[] = [];
-    for (const record of this.rsvps.values()){
-      if (record.eventId === eventId) results.push(record);
-    }
-    return Ok(results)
+  async findAllByEvent(eventId: string): Promise<Result<RSVPRecord[], RSVPError>> {
+    try {
+    const results = Array.from(this.rsvps.values())
+      .filter(r => r.eventId === eventId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    return Ok(results);
+  } catch {
+    return Err(UnexpectedDependencyError("Failed to list RSVPs by event."));
   }
+}
   
   async addToWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>> {
     try {
