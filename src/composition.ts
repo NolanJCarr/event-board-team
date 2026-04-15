@@ -17,6 +17,8 @@ import type { Event as CRUDEvent } from "./events/Event";
 import { InMemoryEventRepository as FilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
+// CRUD EventService — used for event creation and editing (features 1 & 3)
+import { EventService } from "./events/EventService";
 
 // ---------------------------------------------------------------------------
 // Demo seed events — gives the app real data to work with in the browser.
@@ -108,8 +110,12 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // Event wiring — filter repo powers the search/category/timeframe feature
   const filterEventRepository = new FilterEventRepository();
   filterEventRepository.seed(DEMO_EVENTS);
-  const eventService = CreateEventService(filterEventRepository);
-  const eventController = CreateEventController(eventService, resolvedLogger);
+  const filterEventService = CreateEventService(filterEventRepository);
+
+  // CRUD event service — powers event creation and editing
+  const crudEventService = new EventService(crudEventRepository);
+
+  const eventController = CreateEventController(filterEventService, crudEventService, resolvedLogger);
 
   return CreateApp(authController, rsvpController, eventController, resolvedLogger);
 }
