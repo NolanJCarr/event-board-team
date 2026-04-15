@@ -48,5 +48,6 @@ export interface GetEventsFilter {
 // This says that any repository built must have a getEvents function.
 export interface IEventRepository {
     getEvents(filter: GetEventsFilter): Promise<Result<Event[], EventError>>;
+    findById(eventId: string): Promise<Result<Event | null, EventError>>;
 }
 
