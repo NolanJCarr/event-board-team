@@ -2,7 +2,7 @@ import type { Result } from "../lib/result";
 import { Ok, Err } from "../lib/result";
 import type { Event, CreateEventInput, EventCategory } from "./Event";
 import type { IEventRepository } from "./EventRepository";
-import { InvalidInputError, UnauthorizedError } from "./errors";
+import { InvalidInputError, UnauthorizedError, type EventError } from "./errors";
 
 const VALID_CATEGORIES: EventCategory[] = [
   "social",
@@ -19,7 +19,7 @@ export class EventService {
 
   async createEvent(
     input: CreateEventInput
-  ): Promise<Result<Event, InvalidInputError | UnauthorizedError>> {
+  ): Promise<Result<Event, EventError>> {
     // Validate required fields
     const validationError = this.validateEventInput(input);
     if (validationError) {
@@ -29,7 +29,7 @@ export class EventService {
     // Validate category
     if (!VALID_CATEGORIES.includes(input.category as EventCategory)) {
       return Err(
-        new InvalidInputError(
+        InvalidInputError(
           `Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}`
         )
       );
@@ -38,13 +38,13 @@ export class EventService {
     // Validate time range
     if (input.endTime <= input.startTime) {
       return Err(
-        new InvalidInputError("Event end time must be after start time")
+        InvalidInputError("Event end time must be after start time")
       );
     }
 
     // Validate capacity if provided
     if (input.capacity !== undefined && input.capacity < 1) {
-      return Err(new InvalidInputError("Capacity must be at least 1"));
+      return Err(InvalidInputError("Capacity must be at least 1"));
     }
 
     // Create the event with draft status
@@ -65,49 +65,49 @@ export class EventService {
 
   private validateEventInput(
     input: CreateEventInput
-  ): InvalidInputError | null {
+  ): EventError | null {
     // Title validation
     if (!input.title || input.title.trim().length === 0) {
-      return new InvalidInputError("Title is required");
+      return InvalidInputError("Title is required");
     }
     if (input.title.trim().length > 200) {
-      return new InvalidInputError("Title must be 200 characters or less");
+      return InvalidInputError("Title must be 200 characters or less");
     }
 
     // Description validation
     if (!input.description || input.description.trim().length === 0) {
-      return new InvalidInputError("Description is required");
+      return InvalidInputError("Description is required");
     }
     if (input.description.trim().length > 2000) {
-      return new InvalidInputError(
+      return InvalidInputError(
         "Description must be 2000 characters or less"
       );
     }
 
     // Location validation
     if (!input.location || input.location.trim().length === 0) {
-      return new InvalidInputError("Location is required");
+      return InvalidInputError("Location is required");
     }
     if (input.location.trim().length > 200) {
-      return new InvalidInputError("Location must be 200 characters or less");
+      return InvalidInputError("Location must be 200 characters or less");
     }
 
     // Category validation
     if (!input.category || input.category.trim().length === 0) {
-      return new InvalidInputError("Category is required");
+      return InvalidInputError("Category is required");
     }
 
     // Date validation
     if (!input.startTime || !(input.startTime instanceof Date)) {
-      return new InvalidInputError("Valid start time is required");
+      return InvalidInputError("Valid start time is required");
     }
     if (!input.endTime || !(input.endTime instanceof Date)) {
-      return new InvalidInputError("Valid end time is required");
+      return InvalidInputError("Valid end time is required");
     }
 
     // Organizer validation
     if (!input.organizerId || input.organizerId.trim().length === 0) {
-      return new InvalidInputError("Organizer ID is required");
+      return InvalidInputError("Organizer ID is required");
     }
 
     return null;

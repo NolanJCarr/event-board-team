@@ -1,29 +1,28 @@
-export class InvalidInputError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidInputError";
-  }
+export interface EventError {
+  name: string;
+  message: string;
 }
 
-export class EventNotFoundError extends Error {
-  constructor(message: string = "Event not found") {
-    super(message);
-    this.name = "EventNotFoundError";
-  }
-}
+export const InvalidInputError = (message: string): EventError => ({
+  name: "InvalidInputError",
+  message,
+});
 
-export class UnauthorizedError extends Error {
-  constructor(message: string = "You do not have permission to perform this action") {
-    super(message);
-    this.name = "UnauthorizedError";
-  }
-}
+export const EventNotFoundError = (
+  message: string = "Event not found"
+): EventError => ({
+  name: "EventNotFoundError",
+  message,
+});
 
-export class InvalidStateError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidStateError";
-  }
-}
+export const UnauthorizedError = (
+  message: string = "You do not have permission to perform this action"
+): EventError => ({
+  name: "UnauthorizedError",
+  message,
+});
 
-export type EventError = InvalidInputError | EventNotFoundError | UnauthorizedError | InvalidStateError;
+export const InvalidStateError = (message: string): EventError => ({
+  name: "InvalidStateError",
+  message,
+});
