@@ -20,6 +20,8 @@ src/views/
   home.ejs            # Authenticated landing page
 ```
 
+New features add their own subdirectories (e.g., `events/`, `rsvp/`) and a `partials/` folder within them for HTMX fragments.
+
 ## Layout Conventions
 - `layouts/base.ejs` renders the full HTML shell. Page content is injected at `<%- body %>`.
 - Page views do **not** include `<html>`/`<body>` — they are body fragments only.
@@ -44,20 +46,29 @@ Access pattern: `session?.authenticatedUser` (optional-chain; unauthenticated pa
 Roles: `"admin" | "staff" | "user"` — check `session.authenticatedUser.role` for role-gated UI.
 
 ## HTMX Partial Rendering Pattern
-HTMX requests are detected via `req.get("HX-Request") === "true"` in `app.ts`.
 
-For partial responses (auth guards, inline errors), render with `layout: false`:
+Any interaction described as "without a full page reload" **must** return an HTML fragment, not a full page. This is a graded requirement.
+
+Detect HTMX in the controller:
 ```ts
-res.status(401).render("partials/error", {
-  message: "...",
-  layout: false,
-});
+if (req.get("HX-Request") === "true") {
+  return res.render("feature/partials/my-partial", { data, layout: false });
+}
+res.render("feature/my-full-page", { data });
 ```
 
-Full-page routes always use the default layout (no `layout` key needed in locals).
-HTMX swap targets should point at a wrapper element; the partial returns only the inner HTML.
+HTMX swap targets point at a wrapper element; the partial returns only the inner HTML.
 
 ## Frontend Libraries (loaded in `layouts/base.ejs`)
-- **Tailwind CSS v4** — browser CDN build, utility-first
-- **Alpine.js v3** — `x-data`, `x-show`, `@click`, etc. for lightweight interactivity
-- **HTMX 2.0** — `hx-get/post`, `hx-target`, `hx-swap` for server-driven partials
+- **Tailwind CSS v4** — utility-first, browser CDN build
+- **Alpine.js v3** — `x-data`, `x-show`, `@click`, etc. for lightweight client-side interactivity (Sprint 4)
+- **HTMX 2.0** — `hx-get/post`, `hx-target`, `hx-swap` for server-driven partials (Sprint 2+)
+
+## Sprint-by-Sprint View Requirements
+
+| Sprint | View Requirement |
+|---|---|
+| 1 | Full-page renders only. Server-side validation errors re-render the form. |
+| 2 | Any interaction marked "without a full page reload" must use HTMX + a partial. |
+| 3 | No view changes required — data layer only. |
+| 4 | Polish with Tailwind. Add Alpine.js for transitions, confirmations, counters, etc. |
