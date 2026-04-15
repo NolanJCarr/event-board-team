@@ -27,4 +27,6 @@ export interface IRSVPRepository {
   removeFromWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>>;
   /** Removes and returns the first userId on the waitlist, or null if empty. */
   shiftWaitlist(eventId: string): Promise<Result<string | null, RSVPError>>;
+  getWaitlistPosition(userId: string, eventId: string,): Promise<Result<number | null, RSVPError>>;
+  cancelAndPromote(cancellerRecord: RSVPRecord, eventId:string,): Promise<Result<RSVPRecord | null, RSVPError>>;
 }
