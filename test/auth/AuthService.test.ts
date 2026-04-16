@@ -1,5 +1,5 @@
 import { CreateAuthService } from "../../src/auth/AuthService";
-import { CreateInMemoryUserRepository } from "../../src/auth/InMemoryUserRepository";
+import { CreateInMemoryUserRepository } from "../../src/repository/InMemoryUserRepository";
 import { CreatePasswordHasher } from "../../src/auth/PasswordHasher";
 
 describe("AuthService", () => {

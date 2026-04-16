@@ -23,6 +23,10 @@
             <% if (session.authenticatedUser.role === "admin") { %>
               <a href="/admin/users" class="text-blue-700 font-semibold no-underline hover:underline">Manage Users</a>
             <% } %>
+            <a href="/my-rsvps" class="text-blue-700 font-semibold no-underline hover:underline">My RSVPs</a>
+            <% if (session.authenticatedUser.role === "admin" || session.authenticatedUser.role === "staff") { %>
+              <a href="/events/new" class="text-blue-700 font-semibold no-underline hover:underline">Create Event</a>
+            <% } %>
             <span class="text-slate-500">
               Signed in as <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
               (<%= session.authenticatedUser.role %>)

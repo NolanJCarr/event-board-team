@@ -9,8 +9,6 @@ Authentication (login/logout) and admin user management (create/delete/list). Ro
 |------|---------|
 | `User.ts` | Domain types: `IUserRecord`, `IAuthenticatedUser`, `IUserSummary`, `UserRole` |
 | `errors.ts` | `AuthError` discriminated union + factory functions |
-| `UserRepository.ts` | `IUserRepository` interface — the persistence contract |
-| `InMemoryUserRepository.ts` | In-memory impl seeded with `DEMO_USERS`; swap for DB impl here |
 | `PasswordHasher.ts` | `IPasswordHasher` interface + scrypt impl (`salt:hash` format) |
 | `AuthService.ts` | `IAuthService.authenticate()` — validates credentials, returns `Result<IAuthenticatedUser, AuthError>` |
 | `AdminUserService.ts` | `IAdminUserService` — list/create/delete users; enforces business rules |
@@ -44,7 +42,7 @@ All service methods return `Result<T, AuthError>` — never throw. `AuthControll
 - Email is always normalized (`trim().toLowerCase()`) before any lookup or storage.
 
 ## Adding a Persistent Repository
-1. Implement `IUserRepository` from `UserRepository.ts`.
+1. Implement `IUserRepository` from `src/repository/UserRepository.ts`.
 2. Swap `CreateInMemoryUserRepository()` in `src/composition.ts`. No other files change.
 
 ## Views
