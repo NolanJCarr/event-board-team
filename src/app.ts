@@ -19,6 +19,8 @@ import {
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./events/EventController";
+import { IEventCreationController } from "./events/EventCreationController";
+import { IEventEditingController } from "./events/EventEditingController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -40,6 +42,8 @@ class ExpressApp implements IApp {
     // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
     private readonly eventController: IEventController,
+    private readonly eventCreationController: IEventCreationController,
+    private readonly eventEditingController: IEventEditingController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -254,6 +258,46 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.createEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/:id/edit",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.showEditForm(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.updateEvent(req, res, sessionStore(req));
+      }),
+    );
+
     // ── Authenticated home page ──────────────────────────────────────
     // TODO: Replace this placeholder with your project's main page.
 
@@ -310,7 +354,9 @@ export function CreateApp(
   // eventController was added here to match the constructor.
   rsvpController: IRSVPController,
   eventController: IEventController,
+  eventCreationController: IEventCreationController,
+  eventEditingController: IEventEditingController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, eventEditingController, logger);
 }
