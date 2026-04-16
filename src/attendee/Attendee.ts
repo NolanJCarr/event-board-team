@@ -8,7 +8,7 @@ export interface AttendeeEntry {
 }
 
 
-export interface GroupedAttendeeList {
+export interface AttendeeList {
   attending: AttendeeEntry[];
   waitlisted: AttendeeEntry[];
   cancelled: AttendeeEntry[];
