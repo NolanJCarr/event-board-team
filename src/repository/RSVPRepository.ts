@@ -21,6 +21,7 @@ export interface IRSVPRepository {
   findAllByUser(userId: string): Promise<Result<RSVPRecord[], RSVPError>>;
   saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>>;
   countAttendees(eventId: string): Promise<Result<number, RSVPError>>;
+  updateStatus(userId: string, eventId: string,status: RSVPStatus,): Promise<Result<RSVPRecord | null, RSVPError>>;
 
   // ── Waitlist (ordered by insertion time) ─────────────────────────────────────
   addToWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>>;
@@ -28,5 +29,5 @@ export interface IRSVPRepository {
   /** Removes and returns the first userId on the waitlist, or null if empty. */
   shiftWaitlist(eventId: string): Promise<Result<string | null, RSVPError>>;
   getWaitlistPosition(userId: string, eventId: string,): Promise<Result<number | null, RSVPError>>;
-  cancelAndPromote(cancellerRecord: RSVPRecord, eventId:string,): Promise<Result<RSVPRecord | null, RSVPError>>;
+  
 }
