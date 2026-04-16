@@ -95,18 +95,18 @@ class AttendeeListService implements IAttendeeListService {
       buckets[record.status].push({
         userId: record.userId,
         displayName: nameCache.get(record.userId)!,
-        rsvpedAt: record.createdAt.toISOString(),
+        status: record.status,
+        rsvpedAt: record.createdAt,
       });
     }
 
     // ── 6. Sort each bucket oldest-first ──────────────────────────────────────
     // ISO-8601 strings are lexicographically ordered, so localeCompare is exact.
     const byRsvpTime = (a: AttendeeEntry, b: AttendeeEntry): number =>
-      a.rsvpedAt.localeCompare(b.rsvpedAt);
+      a.rsvpedAt.getTime() - b.rsvpedAt.getTime();
 
     return Ok({
-      eventId,
-      going: buckets.going.sort(byRsvpTime),
+      attending: buckets.going.sort(byRsvpTime),
       waitlisted: buckets.waitlisted.sort(byRsvpTime),
       cancelled: buckets.cancelled.sort(byRsvpTime),
     });
