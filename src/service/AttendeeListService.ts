@@ -3,13 +3,13 @@ import { Ok, Err } from "../lib/result";
 import type { IEventRepository } from "../events/EventRepository";
 import type { IRSVPRepository } from "../repository/RSVPRepository";
 import type { IUserRepository } from "../repository/UserRepository";
-import type { AttendeeList, AttendeeEntry } from "./Attendee";
-import type { AttendeeListError } from "./errors";
-import {
+import type {AttendeeList, AttendeeEntry } from "../attendee/Attendee";
+import { 
+  AttendeeListError,
   AttendeeListNotFoundError,
   AttendeeListForbiddenError,
   AttendeeListUserLookupError,
-} from "./errors";
+} from "../attendee/errors";
 import type { RSVPStatus } from "../repository/RSVPRepository";
 import type { UserRole } from "../auth/User";
 
