@@ -19,7 +19,7 @@ import { InMemoryEventRepository as FilterEventRepository } from "./repository/I
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
 import { CreateAttendeeListController} from "./attendee/AttendeeListController";
-import { CreateAttendeeListService} from "./attendee/AttendeeListService"
+import { CreateAttendeeListService} from "./service/AttendeeListService"
 import { CreateEventCreationController } from "./events/EventCreationController";
 import { CreateEventEditingController } from "./events/EventEditingController";
 // CRUD EventService — used for event creation and editing (features 1 & 3)
