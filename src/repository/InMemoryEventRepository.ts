@@ -3,11 +3,20 @@ import type { Event, EventError, GetEventsFilter, IEventRepository } from "./Eve
 
 export class InMemoryEventRepository implements IEventRepository {
   private events: Map<string, Event> = new Map();
+  private crudRepo?: { getAllEvents(): Event[] };
 
   seed(events: Event[]): void {
     for (const event of events) {
       this.events.set(event.id, event);
     }
+  }
+
+  /**
+   * Seed from a CRUD repository instead of using our own data store.
+   * This makes the filter repository delegate to the shared CRUD repo.
+   */
+  seedFromCrudRepo(crudRepo: { getAllEvents(): Event[] }): void {
+    this.crudRepo = crudRepo;
   }
 
   async getEvents(filter: GetEventsFilter): Promise<Result<Event[], EventError>> {
@@ -30,7 +39,10 @@ export class InMemoryEventRepository implements IEventRepository {
       endRange.setHours(23, 59, 59, 999);
     }
 
-    let results = Array.from(this.events.values()).filter(
+    // Use CRUD repository if available, otherwise use own data store
+    const allEvents = this.crudRepo ? this.crudRepo.getAllEvents() : Array.from(this.events.values());
+
+    let results = allEvents.filter(
       (event) => event.status === "published",
     );
 

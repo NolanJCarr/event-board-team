@@ -1,18 +1,20 @@
 import type { Request, Response } from "express";
 import type { IEventService } from "../service/EventService";
 import type { ILoggingService } from "../service/LoggingService";
+import { touchAppSession, type AppSessionStore } from "../session/AppSession";
 
 export interface IEventController {
-  showEvents(req: Request, res: Response): Promise<void>;
+  showEvents(req: Request, res: Response, store: AppSessionStore): Promise<void>;
 }
-// This is a dependency injection. 
+// This is a dependency injection.
 class EventController implements IEventController {
   constructor(
     private readonly eventService: IEventService,
     private readonly logger: ILoggingService,
   ) {}
 
-  async showEvents(req: Request, res: Response): Promise<void> {
+  async showEvents(req: Request, res: Response, store: AppSessionStore): Promise<void> {
+    const session = touchAppSession(store);
     // This reads the category from the url. It is undefined if nothing was typed. 
     const category = typeof req.query.category === "string" ? req.query.category : undefined;
     // This reads the timeframe from the url. It is undefined if nothing was typed. 
@@ -46,6 +48,7 @@ class EventController implements IEventController {
       category: category ?? "",
       timeframe: validTimeframe ?? "all",
       searchQuery: searchQuery ?? "",
+      session,
     });
   }
 }

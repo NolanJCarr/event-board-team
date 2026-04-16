@@ -1,0 +1,16 @@
+<% if (pageError) { %>
+  <%- include("partials/error", { message: pageError }) %>
+<% } %>
+
+<% if (dashboard) { %>
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-slate-900 mb-1">My Dashboard</h1>
+    <p class="text-slate-500 text-sm">Events you are organising, grouped by status.</p>
+  </div>
+
+  <%- include("partials/dashboard", { dashboard: dashboard }) %>
+<% } %>
+
+<div class="mt-6">
+  <a href="/home" class="text-blue-600 hover:text-blue-800 font-medium text-sm">&larr; Back to Home</a>
+</div>

@@ -163,6 +163,7 @@ class RSVPService implements IRSVPService {
       if (nextUserId !== null) {
         const promotedResult = await this.repository.findRSVP(nextUserId, eventId);
         if (promotedResult.ok === false) {
+          await this.repository.addToWaitlist(nextUserId, eventId);
           return Err(UnexpectedDependencyError(promotedResult.value.message));
         }
         if (promotedResult.value !== null) {
@@ -171,6 +172,7 @@ class RSVPService implements IRSVPService {
             status: "going",
           });
           if (promoteResult.ok === false) {
+            await this.repository.addToWaitlist(nextUserId, eventId);
             return Err(UnexpectedDependencyError(promoteResult.value.message));
           }
         }

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { IAttendeeListService } from "./AttendeeListService";
+import type { IAttendeeListService } from "../service/AttendeeListService";
 import type { AttendeeListError } from "./errors";
 import type { ILoggingService } from "../service/LoggingService";
 import { getAuthenticatedUser, type AppSessionStore } from "../session/AppSession";

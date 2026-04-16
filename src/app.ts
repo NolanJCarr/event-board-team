@@ -18,7 +18,13 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import { IEventService } from "./event/EventService";
+import { IDashboardService } from "./event/DashboardService";
+import type { EventError } from "./event/errors";
 import { IEventController } from "./events/EventController";
+import { IAttendeeListController } from "./attendee/AttendeeListController";
+import { IEventCreationController } from "./events/EventCreationController";
+import { IEventEditingController } from "./events/EventEditingController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -40,7 +46,12 @@ class ExpressApp implements IApp {
     // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
     private readonly eventController: IEventController,
+    private readonly attendeeListController: IAttendeeListController,
+    private readonly eventCreationController: IEventCreationController,
+    private readonly eventEditingController: IEventEditingController,
     private readonly logger: ILoggingService,
+    private readonly eventService: IEventService,
+    private readonly dashboardService: IDashboardService,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -242,6 +253,45 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        this.logger.info(`GET /events/${req.params.id}`);
+        const store = sessionStore(req);
+        const browserSession = recordPageView(store);
+        const user = getAuthenticatedUser(store);
+
+        const result = this.eventService.getEventById({
+          eventId: typeof req.params.id === "string" ? req.params.id : "",
+          userId: user?.userId ?? "",
+          role: user?.role ?? "",
+        });
+
+        if (!result.ok) {
+          const error = result.value as EventError;
+          const statusMap: Record<string, number> = {
+            EventNotFoundError: 404,
+            UnauthorizedError: 403,
+            InvalidInputError: 400,
+            InvalidStateError: 409,
+          };
+          const status = statusMap[error.name] ?? 500;
+          res.status(status).render("event/detail", {
+            session: browserSession,
+            event: null,
+            pageError: error.message,
+          });
+          return;
+        }
+
+        res.render("event/detail", {
+          session: browserSession,
+          event: result.value,
+          pageError: null,
+        });
+      }),
+    );
+
     // ── Events routes ────────────────────────────────────────────────
 
     this.app.get(
@@ -250,7 +300,106 @@ class ExpressApp implements IApp {
         if (!this.requireAuthenticated(req, res)) return;
         // A user must be logged in to see the events.
         // It is handed to the event controller for the rest.
-        await this.eventController.showEvents(req, res);
+        await this.eventController.showEvents(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.createEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/:id/edit",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.showEditForm(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.updateEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/:eventId/attendees",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.attendeeListController.getAttendeeList(req, res, sessionStore(req));
+      }),
+    );
+
+    // ── Dashboard ────────────────────────────────────────────────────
+
+    this.app.get(
+      "/dashboard",
+      asyncHandler(async (req, res) => {
+        this.logger.info("GET /dashboard");
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const store = sessionStore(req);
+        const browserSession = recordPageView(store);
+        const user = getAuthenticatedUser(store);
+
+        const result = this.dashboardService.getOrganizerEvents({
+          userId: user?.userId ?? "",
+          role: user?.role ?? "",
+        });
+
+        if (!result.ok) {
+          const status = result.value.name === "UnauthorizedError" ? 403 : 500;
+          if (this.isHtmxRequest(req)) {
+            res.status(status).render("partials/error", {
+              message: result.value.message,
+              layout: false,
+            });
+          } else {
+            res.status(status).render("dashboard", {
+              session: browserSession,
+              dashboard: null,
+              pageError: result.value.message,
+            });
+          }
+          return;
+        }
+
+        if (this.isHtmxRequest(req)) {
+          res.render("partials/dashboard", {
+            dashboard: result.value,
+            layout: false,
+          });
+        } else {
+          res.render("dashboard", {
+            session: browserSession,
+            dashboard: result.value,
+            pageError: null,
+          });
+        }
       }),
     );
 
@@ -307,10 +456,14 @@ class ExpressApp implements IApp {
 
 export function CreateApp(
   authController: IAuthController,
-  // eventController was added here to match the constructor.
   rsvpController: IRSVPController,
   eventController: IEventController,
+  attendeeListController: IAttendeeListController,
+  eventCreationController: IEventCreationController,
+  eventEditingController: IEventEditingController,
   logger: ILoggingService,
+  eventService: IEventService,
+  dashboardService: IDashboardService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, attendeeListController, eventCreationController, eventEditingController, logger, eventService, dashboardService);
 }

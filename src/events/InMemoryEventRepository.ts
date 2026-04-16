@@ -59,4 +59,12 @@ export class InMemoryEventRepository implements IEventRepository {
       (event) => event.organizerId === organizerId
     );
   }
+
+  /**
+   * Get all events from the repository (for filter/search features).
+   * This allows the CRUD repository to also serve filtering needs.
+   */
+  getAllEvents(): Event[] {
+    return Array.from(this.events.values());
+  }
 }
