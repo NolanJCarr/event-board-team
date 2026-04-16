@@ -19,6 +19,7 @@ import {
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./events/EventController";
+import { IAttendeeListController } from "./attendee/AttendeeListController";
 import { IEventCreationController } from "./events/EventCreationController";
 import { IEventEditingController } from "./events/EventEditingController";
 
@@ -42,6 +43,7 @@ class ExpressApp implements IApp {
     // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
     private readonly eventController: IEventController,
+    private readonly attendeeListController: IAttendeeListController,
     private readonly eventCreationController: IEventCreationController,
     private readonly eventEditingController: IEventEditingController,
     private readonly logger: ILoggingService,
@@ -298,6 +300,14 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/:eventId/attendees",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.attendeeListController.getAttendeeList(req, res, sessionStore(req));
+      }),
+    );
+
     // ── Authenticated home page ──────────────────────────────────────
     // TODO: Replace this placeholder with your project's main page.
 
@@ -351,12 +361,10 @@ class ExpressApp implements IApp {
 
 export function CreateApp(
   authController: IAuthController,
-  // eventController was added here to match the constructor.
   rsvpController: IRSVPController,
   eventController: IEventController,
-  eventCreationController: IEventCreationController,
-  eventEditingController: IEventEditingController,
+  attendeeListController: IAttendeeListController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, eventEditingController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, eventEditingController, attendeeListController logger);
 }

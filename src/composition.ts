@@ -17,6 +17,8 @@ import type { Event as CRUDEvent } from "./events/Event";
 import { InMemoryEventRepository as FilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
+import { CreateAttendeeListController} from "./attendee/AttendeeListController";
+import { CreateAttendeeListService} from "./attendee/AttendeeListService"
 import { CreateEventCreationController } from "./events/EventCreationController";
 import { CreateEventEditingController } from "./events/EventEditingController";
 // CRUD EventService — used for event creation and editing (features 1 & 3)
@@ -108,26 +110,24 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   for (const event of DEMO_EVENTS) {
     void rsvpRepository.setCapacity(event.id, event.capacity ?? 9999);
   }
+  
   const rsvpService = CreateRSVPService(rsvpRepository, sharedEventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
+  // Event wiring — filter repo powers the search/category/timeframe feature
+  const filterEventRepository = CreateFilterEventRepository();
   // Filter event service — uses a wrapper around the shared CRUD repository
   // This ensures search/filter sees the same data as create/edit
-  const filterEventRepository = new FilterEventRepository();
   filterEventRepository.seedFromCrudRepo(sharedEventRepository);
+  const attendeeListService = CreateAttendeeListService(crudEventRepository, rsvpRepository, authUsers,);
   const filterEventService = CreateEventService(filterEventRepository);
-
-  // CRUD event service — powers event creation and editing
   const crudEventService = new EventService(sharedEventRepository);
-
-  // Megan's EventController — handles filter/search only (Feature 6 & 10)
-  const eventController = CreateEventController(filterEventService, resolvedLogger);
-
-  // Haamed's EventCreationController — handles event creation (Feature 1)
+  const eventService = CreateEventService(filterEventRepository);
+  const eventController = CreateEventController(eventService, resolvedLogger);
   const eventCreationController = CreateEventCreationController(crudEventService, resolvedLogger);
-
-  // Haamed's EventEditingController — handles event editing (Feature 3)
   const eventEditingController = CreateEventEditingController(crudEventService, resolvedLogger);
+  const attendeeListController = CreateAttendeeListController(attendeeListService, resolvedLogger,);
 
-  return CreateApp(authController, rsvpController, eventController, eventCreationController, eventEditingController, resolvedLogger);
+
+  return CreateApp(authController, rsvpController, eventController, attendeeListController, eventCreationController, eventEditingController, resolvedLogger);
 }
