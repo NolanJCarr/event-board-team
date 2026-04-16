@@ -61,6 +61,10 @@ class InMemoryEventRepository implements IEventRepository {
   findById(eventId: string): IEvent | undefined {
     return this.events.find((event) => event.id === eventId);
   }
+
+  findByOrganizerId(organizerId: string): IEvent[] {
+    return this.events.filter((event) => event.organizerId === organizerId);
+  }
 }
 
 export function CreateInMemoryEventRepository(): IEventRepository {
