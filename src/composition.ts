@@ -38,7 +38,7 @@ const DEMO_EVENTS: CRUDEvent[] = [
     title: "Tech Meetup Spring 2026",
     description: "Talks on web development, AI tools, and open source contribution. All skill levels welcome.",
     location: "Campus Center Room 101",
-    category: "tech",
+    category: "technology",
     startTime: new Date("2026-05-01T18:00:00"),
     endTime: new Date("2026-05-01T20:00:00"),
     capacity: 30,

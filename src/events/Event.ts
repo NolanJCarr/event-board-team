@@ -1,6 +1,6 @@
 export type EventStatus = "draft" | "published" | "cancelled" | "past";
 
-export type EventCategory = "social" | "educational" | "volunteer" | "sports" | "arts" | "tech" | "other";
+export type EventCategory = "social" | "educational" | "volunteer" | "sports" | "arts" | "technology" | "other";
 
 export interface Event {
   id: string;
