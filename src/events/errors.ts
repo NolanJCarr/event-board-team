@@ -1,7 +1,8 @@
-export interface EventError {
-  name: string;
-  message: string;
-}
+export type EventError =
+  | { name: "InvalidInputError"; message: string }
+  | { name: "UnauthorizedError"; message: string }
+  | { name: "EventNotFoundError"; message: string }
+  | { name: "InvalidStateError"; message: string };
 
 export const InvalidInputError = (message: string): EventError => ({
   name: "InvalidInputError",
@@ -9,14 +10,14 @@ export const InvalidInputError = (message: string): EventError => ({
 });
 
 export const EventNotFoundError = (
-  message: string = "Event not found"
+  message = "Event not found"
 ): EventError => ({
   name: "EventNotFoundError",
   message,
 });
 
 export const UnauthorizedError = (
-  message: string = "You do not have permission to perform this action"
+  message = "You do not have permission to perform this action"
 ): EventError => ({
   name: "UnauthorizedError",
   message,

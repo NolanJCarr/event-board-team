@@ -85,7 +85,7 @@ class AttendeeListController implements IAttendeeListController {
 
     this.logger.info(
       `User ${caller.userId} viewed attendee list for event ${eventId} ` +
-        `(going: ${result.value.going.length}, ` +
+        `(going: ${result.value.attending.length}, ` +
         `waitlisted: ${result.value.waitlisted.length}, ` +
         `cancelled: ${result.value.cancelled.length})`,
     );
