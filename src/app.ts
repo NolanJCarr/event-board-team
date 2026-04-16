@@ -289,6 +289,9 @@ class ExpressApp implements IApp {
           event: result.value,
           pageError: null,
         });
+      }),
+    );
+
     // ── Events routes ────────────────────────────────────────────────
 
     this.app.get(
@@ -456,9 +459,11 @@ export function CreateApp(
   rsvpController: IRSVPController,
   eventController: IEventController,
   attendeeListController: IAttendeeListController,
+  eventCreationController: IEventCreationController,
+  eventEditingController: IEventEditingController,
   logger: ILoggingService,
   eventService: IEventService,
   dashboardService: IDashboardService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, eventEditingController, attendeeListController logger);
+  return new ExpressApp(authController, rsvpController, eventController, attendeeListController, eventCreationController, eventEditingController, logger, eventService, dashboardService);
 }
