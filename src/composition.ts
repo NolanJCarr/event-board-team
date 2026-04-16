@@ -19,6 +19,8 @@ import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
 // CRUD EventService — used for event creation and editing (features 1 & 3)
 import { EventService } from "./events/EventService";
+// Shared event repository — single source of truth for all event data
+import type { IEventRepository as FilterRepoInterface } from "./repository/EventRepository";
 
 // ---------------------------------------------------------------------------
 // Demo seed events — gives the app real data to work with in the browser.
@@ -94,9 +96,9 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
-  // Event repository — CRUD (findById used by RSVP dashboard; create/update used by event features)
-  const crudEventRepository = new InMemoryEventRepository();
-  crudEventRepository.seed(DEMO_EVENTS);
+  // Shared event repository — single source of truth for ALL event operations
+  const sharedEventRepository = new InMemoryEventRepository();
+  sharedEventRepository.seed(DEMO_EVENTS);
 
   // RSVP wiring
   const rsvpRepository = CreateInMemoryRSVPRepository();
@@ -104,16 +106,17 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   for (const event of DEMO_EVENTS) {
     void rsvpRepository.setCapacity(event.id, event.capacity ?? 9999);
   }
-  const rsvpService = CreateRSVPService(rsvpRepository, crudEventRepository);
+  const rsvpService = CreateRSVPService(rsvpRepository, sharedEventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
-  // Event wiring — filter repo powers the search/category/timeframe feature
+  // Filter event service — uses a wrapper around the shared CRUD repository
+  // This ensures search/filter sees the same data as create/edit
   const filterEventRepository = new FilterEventRepository();
-  filterEventRepository.seed(DEMO_EVENTS);
+  filterEventRepository.seedFromCrudRepo(sharedEventRepository);
   const filterEventService = CreateEventService(filterEventRepository);
 
   // CRUD event service — powers event creation and editing
-  const crudEventService = new EventService(crudEventRepository);
+  const crudEventService = new EventService(sharedEventRepository);
 
   const eventController = CreateEventController(filterEventService, crudEventService, resolvedLogger);
 
