@@ -4,6 +4,12 @@ import type { Event, CreateEventInput, UpdateEventInput, EventCategory } from ".
 import type { IEventRepository } from "./EventRepository";
 import { InvalidInputError, UnauthorizedError, EventNotFoundError, InvalidStateError, type EventError } from "./errors";
 
+export interface IEventService {
+  getEventById(input: { eventId: string; userId: string; role: string }): Promise<Result<Event, EventError>>;
+  createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
+  updateEvent(input: UpdateEventInput): Promise<Result<Event, EventError>>;
+}
+
 const VALID_CATEGORIES: EventCategory[] = [
   "social",
   "educational",
@@ -14,7 +20,7 @@ const VALID_CATEGORIES: EventCategory[] = [
   "other",
 ];
 
-export class EventService {
+export class EventService implements IEventService {
   constructor(private readonly eventRepository: IEventRepository) {}
 
   async createEvent(
@@ -228,4 +234,31 @@ export class EventService {
 
     return Ok(updatedEvent);
   }
+
+  async getEventById(input: {
+    eventId: string;
+    userId: string;
+    role: string;
+  }): Promise<Result<Event, EventError>> {
+    const event = await this.eventRepository.findById(input.eventId);
+
+    if (!event) {
+      return Err(EventNotFoundError(`Event with id "${input.eventId}" not found`));
+    }
+
+    if (event.status === "draft") {
+      const isOrganizer = input.userId === event.organizerId;
+      const isPrivileged = input.role === "admin" || input.role === "staff";
+
+      if (!isOrganizer && !isPrivileged) {
+        return Err(UnauthorizedError("You do not have permission to view this draft event"));
+      }
+    }
+
+    return Ok(event);
+  }
+}
+
+export function CreateEventService(eventRepo: IEventRepository): IEventService {
+  return new EventService(eventRepo);
 }

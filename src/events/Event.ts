@@ -34,3 +34,7 @@ export interface UpdateEventInput {
   userId: string;
   role: string;
 }
+
+export interface IEventWithCounts extends Event {
+  attendeeCount: number; // count of RSVPs with status "going"
+}

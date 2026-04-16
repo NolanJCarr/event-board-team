@@ -18,9 +18,9 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
-import { IEventService } from "./event/EventService";
+import type { IEventService } from "./events/EventService";
 import { IDashboardService } from "./event/DashboardService";
-import type { EventError } from "./event/errors";
+import type { EventError } from "./events/errors";
 import { IEventController } from "./events/EventController";
 import { IAttendeeListController } from "./attendee/AttendeeListController";
 import { IEventCreationController } from "./events/EventCreationController";
@@ -261,7 +261,7 @@ class ExpressApp implements IApp {
         const browserSession = recordPageView(store);
         const user = getAuthenticatedUser(store);
 
-        const result = this.eventService.getEventById({
+        const result = await this.eventService.getEventById({
           eventId: typeof req.params.id === "string" ? req.params.id : "",
           userId: user?.userId ?? "",
           role: user?.role ?? "",
@@ -366,7 +366,7 @@ class ExpressApp implements IApp {
         const browserSession = recordPageView(store);
         const user = getAuthenticatedUser(store);
 
-        const result = this.dashboardService.getOrganizerEvents({
+        const result = await this.dashboardService.getOrganizerEvents({
           userId: user?.userId ?? "",
           role: user?.role ?? "",
         });

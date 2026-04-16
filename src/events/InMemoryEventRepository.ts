@@ -68,3 +68,7 @@ export class InMemoryEventRepository implements IEventRepository {
     return Array.from(this.events.values());
   }
 }
+
+export function CreateInMemoryEventRepository(): InMemoryEventRepository {
+  return new InMemoryEventRepository();
+}

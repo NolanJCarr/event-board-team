@@ -1,7 +1,7 @@
-import { IEvent, IEventWithCounts } from "./Event";
-import { EventError, UnauthorizedError } from "./errors";
-import { IEventRepository } from "./EventRepository";
-import { IRSVPRepository } from "./RSVPRepository";
+import { Event, IEventWithCounts } from "../events/Event";
+import { EventError, UnauthorizedError } from "../events/errors";
+import { IEventRepository } from "../events/EventRepository";
+import { IRSVPRepository } from "../repository/RSVPRepository";
 import { Result, Ok, Err } from "../lib/result";
 
 export interface DashboardOutput {
@@ -14,7 +14,7 @@ export interface IDashboardService {
   getOrganizerEvents(input: {
     userId: string;
     role: string;
-  }): Result<DashboardOutput, EventError>;
+  }): Promise<Result<DashboardOutput, EventError>>;
 }
 
 export function CreateDashboardService(
@@ -22,18 +22,20 @@ export function CreateDashboardService(
   rsvpRepo: IRSVPRepository,
 ): IDashboardService {
   return {
-    getOrganizerEvents({ userId, role }) {
+    async getOrganizerEvents({ userId, role }) {
       if (!userId) {
         return Err(UnauthorizedError("Authentication required to view dashboard."));
       }
 
-      const events = eventRepo.findByOrganizerId(userId);
+      const events = await eventRepo.findByOrganizerId(userId);
 
-      const withCounts: IEventWithCounts[] = events.map((event) => {
-        const rsvps = rsvpRepo.findByEventId(event.id);
-        const attendeeCount = rsvps.filter((r) => r.status === "going").length;
-        return { ...event, attendeeCount };
-      });
+      const withCounts: IEventWithCounts[] = await Promise.all(
+        events.map(async (event) => {
+          const countResult = await rsvpRepo.countAttendees(event.id);
+          const attendeeCount = countResult.ok ? countResult.value : 0;
+          return { ...event, attendeeCount };
+        }),
+      );
 
       const draft = withCounts.filter((e) => e.status === "draft");
       const published = withCounts.filter((e) => e.status === "published");
