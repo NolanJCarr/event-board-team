@@ -371,18 +371,19 @@ class ExpressApp implements IApp {
           role: user?.role ?? "",
         });
 
-        if (!result.ok) {
-          const status = result.value.name === "UnauthorizedError" ? 403 : 500;
+        if (result.ok === false) {
+          const error = result.value;
+          const status = error.name === "UnauthorizedError" ? 403 : 500;
           if (this.isHtmxRequest(req)) {
             res.status(status).render("partials/error", {
-              message: result.value.message,
+              message: error.message,
               layout: false,
             });
           } else {
             res.status(status).render("dashboard", {
               session: browserSession,
               dashboard: null,
-              pageError: result.value.message,
+              pageError: error.message,
             });
           }
           return;
