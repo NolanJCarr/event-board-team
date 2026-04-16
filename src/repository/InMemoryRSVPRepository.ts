@@ -1,6 +1,6 @@
 import { Ok, Err, type Result } from "../lib/result";
 import { UnexpectedDependencyError, type RSVPError } from "../rsvp/errors";
-import type { IRSVPRepository, RSVPRecord } from "./RSVPRepository";
+import type { IRSVPRepository, RSVPRecord, RSVPStatus } from "./RSVPRepository";
 
 class InMemoryRSVPRepository implements IRSVPRepository {
   // keyed by `${userId}:${eventId}`
@@ -75,6 +75,26 @@ class InMemoryRSVPRepository implements IRSVPRepository {
       return Err(UnexpectedDependencyError("Failed to count attendees."));
     }
   }
+  async updateStatus(userId: string, eventId: string, status: RSVPStatus,): Promise<Result<RSVPRecord | null, RSVPError>> {
+    try {
+      const key = this.recordKey(userId, eventId);
+      const record = this.rsvps.get(key);
+      if (!record) {
+        return Ok(null);
+      }
+
+      const updated: RSVPRecord = {
+        ...record,
+        status,
+      };
+
+      this.rsvps.set(key, updated);
+
+      return Ok(updated);
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to update RSVP status."));
+    }
+  }
 
   async addToWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>> {
     try {
@@ -106,9 +126,23 @@ class InMemoryRSVPRepository implements IRSVPRepository {
     try {
       const list = this.waitlists.get(eventId);
       if (!list || list.length === 0) return Ok(null);
-      return Ok(list.shift()!);
+      const userId = list.shift()!
+      this.waitlists.set(eventId, list);
+      return Ok(userId);
     } catch {
       return Err(UnexpectedDependencyError("Failed to shift waitlist."));
+    }
+  }
+
+  async getWaitlistPosition(userId: string, eventId: string,): Promise<Result<number | null, RSVPError>>{
+    try{
+      const list = this.waitlists.get(eventId);
+      if(!list) return Ok(null);
+      const index = list.indexOf(userId);
+      if (index ===-1) return Ok(null);
+      return Ok(index + 1);
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to compute waitlist position."));
     }
   }
 }
