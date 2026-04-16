@@ -1,19 +1,15 @@
 import type { Request, Response } from "express";
 import type { IEventService } from "../service/EventService";
 import type { ILoggingService } from "../service/LoggingService";
-import { touchAppSession, type AppSessionStore, getAuthenticatedUser } from "../session/AppSession";
-import type { EventService } from "./EventService";
+import { touchAppSession, type AppSessionStore } from "../session/AppSession";
 
 export interface IEventController {
   showEvents(req: Request, res: Response, store: AppSessionStore): Promise<void>;
-  showCreateForm(req: Request, res: Response, store: AppSessionStore): Promise<void>;
-  createEvent(req: Request, res: Response, store: AppSessionStore): Promise<void>;
 }
 // This is a dependency injection.
 class EventController implements IEventController {
   constructor(
-    private readonly filterEventService: IEventService,
-    private readonly crudEventService: EventService,
+    private readonly eventService: IEventService,
     private readonly logger: ILoggingService,
   ) {}
 
@@ -31,7 +27,7 @@ class EventController implements IEventController {
         ? timeframe
         : undefined;
     // This asks the service for events using the filters.
-    const result = await this.filterEventService.getEvents({
+    const result = await this.eventService.getEvents({
       category,
       timeframe: validTimeframe,
       searchQuery,
@@ -55,75 +51,11 @@ class EventController implements IEventController {
       session,
     });
   }
-
-  async showCreateForm(req: Request, res: Response, store: AppSessionStore): Promise<void> {
-    const session = touchAppSession(store);
-    this.logger.info("GET /events/new");
-
-    res.render("events/new", {
-      session,
-      pageError: null,
-    });
-  }
-
-  async createEvent(req: Request, res: Response, store: AppSessionStore): Promise<void> {
-    const session = touchAppSession(store);
-    const user = getAuthenticatedUser(store);
-
-    if (!user) {
-      res.status(401).render("partials/error", {
-        message: "You must be logged in to create an event",
-        layout: false,
-      });
-      return;
-    }
-
-    // Parse form data
-    const title = typeof req.body.title === "string" ? req.body.title : "";
-    const description = typeof req.body.description === "string" ? req.body.description : "";
-    const location = typeof req.body.location === "string" ? req.body.location : "";
-    const category = typeof req.body.category === "string" ? req.body.category : "";
-    const startTimeStr = typeof req.body.startTime === "string" ? req.body.startTime : "";
-    const endTimeStr = typeof req.body.endTime === "string" ? req.body.endTime : "";
-    const capacityStr = typeof req.body.capacity === "string" ? req.body.capacity : "";
-
-    // Parse dates
-    const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
-    const endTime = endTimeStr ? new Date(endTimeStr) : new Date();
-    const capacity = capacityStr ? parseInt(capacityStr, 10) : undefined;
-
-    // Call service
-    const result = await this.crudEventService.createEvent({
-      title,
-      description,
-      location,
-      category,
-      startTime,
-      endTime,
-      capacity,
-      organizerId: user.userId,
-    });
-
-    // Handle error
-    if (result.ok === false) {
-      this.logger.warn(`createEvent failed: ${result.value.message}`);
-      res.status(400).render("partials/error", {
-        message: result.value.message,
-        layout: false,
-      });
-      return;
-    }
-
-    // Success - redirect to event list or event detail page
-    this.logger.info(`Event created: ${result.value.id}`);
-    res.redirect("/events");
-  }
 }
 
 export function CreateEventController(
-  filterEventService: IEventService,
-  crudEventService: EventService,
+  eventService: IEventService,
   logger: ILoggingService,
 ): IEventController {
-  return new EventController(filterEventService, crudEventService, logger);
+  return new EventController(eventService, logger);
 }

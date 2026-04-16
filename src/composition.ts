@@ -17,6 +17,7 @@ import type { Event as CRUDEvent } from "./events/Event";
 import { InMemoryEventRepository as FilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
+import { CreateEventCreationController } from "./events/EventCreationController";
 // CRUD EventService — used for event creation and editing (features 1 & 3)
 import { EventService } from "./events/EventService";
 // Shared event repository — single source of truth for all event data
@@ -118,7 +119,11 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // CRUD event service — powers event creation and editing
   const crudEventService = new EventService(sharedEventRepository);
 
-  const eventController = CreateEventController(filterEventService, crudEventService, resolvedLogger);
+  // Megan's EventController — handles filter/search only (Feature 6 & 10)
+  const eventController = CreateEventController(filterEventService, resolvedLogger);
 
-  return CreateApp(authController, rsvpController, eventController, resolvedLogger);
+  // Haamed's EventCreationController — handles event creation (Feature 1)
+  const eventCreationController = CreateEventCreationController(crudEventService, resolvedLogger);
+
+  return CreateApp(authController, rsvpController, eventController, eventCreationController, resolvedLogger);
 }

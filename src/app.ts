@@ -19,6 +19,7 @@ import {
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./events/EventController";
+import { IEventCreationController } from "./events/EventCreationController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -40,6 +41,7 @@ class ExpressApp implements IApp {
     // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
     private readonly eventController: IEventController,
+    private readonly eventCreationController: IEventCreationController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -260,7 +262,7 @@ class ExpressApp implements IApp {
         if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
           return;
         }
-        await this.eventController.showCreateForm(req, res, sessionStore(req));
+        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
       }),
     );
 
@@ -270,7 +272,7 @@ class ExpressApp implements IApp {
         if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
           return;
         }
-        await this.eventController.createEvent(req, res, sessionStore(req));
+        await this.eventCreationController.createEvent(req, res, sessionStore(req));
       }),
     );
 
@@ -330,7 +332,8 @@ export function CreateApp(
   // eventController was added here to match the constructor.
   rsvpController: IRSVPController,
   eventController: IEventController,
+  eventCreationController: IEventCreationController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, logger);
 }
