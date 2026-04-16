@@ -57,15 +57,10 @@ class AttendeeListService implements IAttendeeListService {
 
     // ── 3. Fetch RSVPs ────────────────────────────────────────────────────────
     const rsvpResult = await this.rsvps.listByEvent(eventId);
-
-    if (rsvpResult.ok === false) {
-      // listByEvent wraps its return in Result; a storage failure here is
-      // unrecoverable so we surface it as a 500-class domain error.
-      return Err(new AttendeeListUserLookupError("(storage failure)"));
-    }
-
-    const records = rsvpResult.value;
-
+        if (rsvpResult.ok === false) {
+          return Err(new AttendeeListUserLookupError("(storage failure)"));
+        }
+        const records = rsvpResult.value;
     // ── 4. Resolve display names, one lookup per unique userId ────────────────
     const nameCache = new Map<string, string>();
 
@@ -106,6 +101,7 @@ class AttendeeListService implements IAttendeeListService {
       a.rsvpedAt.getTime() - b.rsvpedAt.getTime();
 
     return Ok({
+      eventId,
       attending: buckets.going.sort(byRsvpTime),
       waitlisted: buckets.waitlisted.sort(byRsvpTime),
       cancelled: buckets.cancelled.sort(byRsvpTime),
