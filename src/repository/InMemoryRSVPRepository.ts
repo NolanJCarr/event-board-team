@@ -87,6 +87,13 @@ class InMemoryRSVPRepository implements IRSVPRepository {
     return Err(UnexpectedDependencyError("Failed to list RSVPs by event."));
   }
 }
+  async listByEvent(eventId: string): Promise<Result<RSVPRecord[], RSVPError>> {
+    const results: RSVPRecord[] = [];
+    for (const record of this.rsvps.values()){
+      if (record.eventId === eventId) results.push(record);
+    }
+    return Ok(results)
+  }
   
   async addToWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>> {
     try {

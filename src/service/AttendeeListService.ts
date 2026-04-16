@@ -60,6 +60,10 @@ class AttendeeListService implements IAttendeeListService {
 
     if (rsvpResult.ok === false) {
       // findAllByEvent wraps its return in Result; a storage failure here is
+    const rsvpResult = await this.rsvps.listByEvent(eventId);
+
+    if (rsvpResult.ok === false) {
+      // listByEvent wraps its return in Result; a storage failure here is
       // unrecoverable so we surface it as a 500-class domain error.
       return Err(new AttendeeListUserLookupError("(storage failure)"));
     }
@@ -103,10 +107,11 @@ class AttendeeListService implements IAttendeeListService {
     // ── 6. Sort each bucket oldest-first ──────────────────────────────────────
     // ISO-8601 strings are lexicographically ordered, so localeCompare is exact.
     const byRsvpTime = (a: AttendeeEntry, b: AttendeeEntry): number =>
-      a.rsvpedAt.getTime() - b.rsvpedAt.getTime();
+      a.rsvpedAt.localeCompare(b.rsvpedAt);
 
     return Ok({
-      attending: buckets.going.sort(byRsvpTime),
+      eventId,
+      going: buckets.going.sort(byRsvpTime),
       waitlisted: buckets.waitlisted.sort(byRsvpTime),
       cancelled: buckets.cancelled.sort(byRsvpTime),
     });
