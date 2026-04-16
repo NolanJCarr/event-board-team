@@ -9,6 +9,7 @@ export interface AttendeeEntry {
 
 
 export interface AttendeeList {
+  eventId: string;
   attending: AttendeeEntry[];
   waitlisted: AttendeeEntry[];
   cancelled: AttendeeEntry[];
