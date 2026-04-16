@@ -19,6 +19,7 @@ import {
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./events/EventController";
+import { IAttendeeListController } from "./attendee/AttendeeListController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -40,6 +41,7 @@ class ExpressApp implements IApp {
     // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
     private readonly eventController: IEventController,
+    private readonly attendeeListController: IAttendeeListController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -254,6 +256,14 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/:eventId/attendees",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.attendeeListController.getAttendeeList(req, res, sessionStore(req));
+      }),
+    );
+
     // ── Authenticated home page ──────────────────────────────────────
     // TODO: Replace this placeholder with your project's main page.
 
@@ -310,7 +320,8 @@ export function CreateApp(
   // eventController was added here to match the constructor.
   rsvpController: IRSVPController,
   eventController: IEventController,
+  attendeeListController: IAttendeeListController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, attendeeListController, logger);
 }
