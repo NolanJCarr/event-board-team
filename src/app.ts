@@ -9,6 +9,7 @@ import {
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
 import { IApp } from "./contracts";
+import type { IRSVPController } from "./rsvp/RSVPController";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -20,6 +21,10 @@ import { ILoggingService } from "./service/LoggingService";
 import { IEventService } from "./event/EventService";
 import { IDashboardService } from "./event/DashboardService";
 import type { EventError } from "./event/errors";
+import { IEventController } from "./events/EventController";
+import { IAttendeeListController } from "./attendee/AttendeeListController";
+import { IEventCreationController } from "./events/EventCreationController";
+import { IEventEditingController } from "./events/EventEditingController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -38,6 +43,12 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    // eventController was added so the app can have access to the events feature.
+    private readonly rsvpController: IRSVPController,
+    private readonly eventController: IEventController,
+    private readonly attendeeListController: IAttendeeListController,
+    private readonly eventCreationController: IEventCreationController,
+    private readonly eventEditingController: IEventEditingController,
     private readonly logger: ILoggingService,
     private readonly eventService: IEventService,
     private readonly dashboardService: IDashboardService,
@@ -278,6 +289,63 @@ class ExpressApp implements IApp {
           event: result.value,
           pageError: null,
         });
+    // ── Events routes ────────────────────────────────────────────────
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        // A user must be logged in to see the events.
+        // It is handed to the event controller for the rest.
+        await this.eventController.showEvents(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.createEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/:id/edit",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.showEditForm(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.updateEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/:eventId/attendees",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.attendeeListController.getAttendeeList(req, res, sessionStore(req));
       }),
     );
 
@@ -348,6 +416,24 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── RSVP routes ──────────────────────────────────────────────────
+
+    this.app.get(
+      "/my-rsvps",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.rsvpController.showMyRSVPs(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:eventId/rsvp",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.rsvpController.toggleRSVP(req, res, sessionStore(req));
+      }),
+    );
+
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
@@ -367,9 +453,12 @@ class ExpressApp implements IApp {
 
 export function CreateApp(
   authController: IAuthController,
+  rsvpController: IRSVPController,
+  eventController: IEventController,
+  attendeeListController: IAttendeeListController,
   logger: ILoggingService,
   eventService: IEventService,
   dashboardService: IDashboardService,
 ): IApp {
-  return new ExpressApp(authController, logger, eventService, dashboardService);
+  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, eventEditingController, attendeeListController logger);
 }

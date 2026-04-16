@@ -1,7 +1,7 @@
 import { Err, Ok, type Result } from "../lib/result";
-import { UnexpectedDependencyError, type AuthError } from "./errors";
+import { UnexpectedDependencyError, type AuthError } from "../auth/errors";
 import type { IUserRepository } from "./UserRepository";
-import type { IUserRecord } from "./User";
+import type { IUserRecord } from "../auth/User";
 
 export const DEMO_USERS: IUserRecord[] = [
   {

@@ -13,6 +13,24 @@ All service methods:
 
 ---
 
+The event object is as defined below:
+
+{
+  ok: true,
+  value: {
+    id: "evt_123",
+    title: "Hackathon",
+    description: "24-hour coding event",
+    location: "Campus Center",
+    category: "tech",
+    startTime: new Date("2026-05-01T10:00:00"),
+    endTime: new Date("2026-05-02T10:00:00"),
+    capacity: 100,
+    status: "published",
+    organizerId: "user_456"
+  }
+}
+
 # EventService Contracts
 
 ## createEvent

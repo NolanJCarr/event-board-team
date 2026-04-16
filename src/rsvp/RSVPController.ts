@@ -1,0 +1,94 @@
+import type { Request, Response } from "express";
+import type { IRSVPService } from "../service/RSVPService";
+import type { RSVPError } from "./errors";
+import type { ILoggingService } from "../service/LoggingService";
+import { getAuthenticatedUser, type AppSessionStore } from "../session/AppSession";
+import type { UserRole } from "../auth/User";
+
+export interface IRSVPController {
+  toggleRSVP(req: Request, res: Response, store: AppSessionStore): Promise<void>;
+  showMyRSVPs(req: Request, res: Response, store: AppSessionStore): Promise<void>;
+}
+
+class RSVPController implements IRSVPController {
+  constructor(
+    private readonly rsvpService: IRSVPService,
+    private readonly logger: ILoggingService,
+  ) {}
+
+  private mapErrorStatus(error: RSVPError): number {
+    if (error.name === "UnauthorizedError") return 403;
+    if (error.name === "EventNotFoundError") return 404;
+    if (error.name === "InvalidStateError") return 409;
+    return 500;
+  }
+
+  async toggleRSVP(req: Request, res: Response, store: AppSessionStore): Promise<void> {
+    const currentUser = getAuthenticatedUser(store);
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    const eventId = typeof req.params.eventId === "string" ? req.params.eventId : "";
+    if (!eventId) {
+      res.status(400).render("partials/error", {
+        message: "Missing event ID.",
+        layout: false,
+      });
+      return;
+    }
+
+    const actor = {
+      userId: currentUser.userId,
+      role: currentUser.role as UserRole,
+    };
+
+    const result = await this.rsvpService.toggleRSVP(actor, eventId);
+
+    if (result.ok === false) {
+      const status = this.mapErrorStatus(result.value);
+      this.logger.warn(`RSVP toggle failed for user ${actor.userId}: ${result.value.message}`);
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    this.logger.info(`User ${actor.userId} toggled RSVP on event ${eventId}: ${result.value}`);
+    // Sprint 2: return an HTMX partial instead of redirecting.
+    res.redirect(`/events/${eventId}`);
+  }
+
+  async showMyRSVPs(_req: Request, res: Response, store: AppSessionStore): Promise<void> {
+    const currentUser = getAuthenticatedUser(store);
+    if (!currentUser) {
+      res.status(401).render("partials/error", { message: "Please log in to continue.", layout: false });
+      return;
+    }
+
+    const actor = { userId: currentUser.userId, role: currentUser.role as UserRole };
+    const result = await this.rsvpService.getMyRSVPs(actor);
+
+    if (result.ok === false) {
+      const status = this.mapErrorStatus(result.value);
+      this.logger.warn(`getMyRSVPs failed for user ${actor.userId}: ${result.value.message}`);
+      res.status(status).render("partials/error", { message: result.value.message, layout: false });
+      return;
+    }
+
+    this.logger.info(`getMyRSVPs for user ${actor.userId}: ${result.value.upcoming.length} upcoming, ${result.value.pastAndCancelled.length} past/cancelled`);
+    res.render("rsvp/dashboard", { dashboard: result.value, session: store.app });
+  }
+}
+
+export function CreateRSVPController(
+  rsvpService: IRSVPService,
+  logger: ILoggingService,
+): IRSVPController {
+  return new RSVPController(rsvpService, logger);
+}
