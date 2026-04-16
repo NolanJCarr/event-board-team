@@ -20,6 +20,7 @@ import {
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./events/EventController";
 import { IEventCreationController } from "./events/EventCreationController";
+import { IEventEditingController } from "./events/EventEditingController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -42,6 +43,7 @@ class ExpressApp implements IApp {
     private readonly rsvpController: IRSVPController,
     private readonly eventController: IEventController,
     private readonly eventCreationController: IEventCreationController,
+    private readonly eventEditingController: IEventEditingController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -276,6 +278,26 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/:id/edit",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.showEditForm(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can edit events.")) {
+          return;
+        }
+        await this.eventEditingController.updateEvent(req, res, sessionStore(req));
+      }),
+    );
+
     // ── Authenticated home page ──────────────────────────────────────
     // TODO: Replace this placeholder with your project's main page.
 
@@ -333,7 +355,8 @@ export function CreateApp(
   rsvpController: IRSVPController,
   eventController: IEventController,
   eventCreationController: IEventCreationController,
+  eventEditingController: IEventEditingController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, logger);
+  return new ExpressApp(authController, rsvpController, eventController, eventCreationController, eventEditingController, logger);
 }
