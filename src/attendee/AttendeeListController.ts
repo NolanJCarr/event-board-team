@@ -90,10 +90,9 @@ class AttendeeListController implements IAttendeeListController {
         `cancelled: ${result.value.cancelled.length})`,
     );
 
-    // Sprint 2: swap for a targeted HTMX partial re-render of the attendee panel.
-    res.render("partials/attendee-list", {
-      attendees: result.value,
-      layout: false,
+    
+    res.render("events/attendee-list", {
+      grouped: result.value,
     });
   }
 }

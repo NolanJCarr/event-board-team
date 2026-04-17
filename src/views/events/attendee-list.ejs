@@ -2,21 +2,21 @@
 
 <h2>Going</h2>
 <ul>
-  <% grouped.attending.forEach(a => { %>
+  <% attending.forEach(a => { %>
     <li><%= a.displayName %> - <%= a.createdAt %></li>
   <% }) %>
 </ul>
 
 <h2>Waitlisted</h2>
 <ul>
-  <% grouped.waitlisted.forEach(a => { %>
+  <% waitlisted.forEach(a => { %>
     <li><%= a.displayName %> - <%= a.createdAt %></li>
   <% }) %>
 </ul>
 
 <h2>Cancelled</h2>
 <ul>
-  <% grouped.cancelled.forEach(a => { %>
+  <% cancelled.forEach(a => { %>
     <li><%= a.displayName %> - <%= a.createdAt %></li>
   <% }) %>
 </ul>
