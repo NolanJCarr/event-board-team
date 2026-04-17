@@ -92,7 +92,7 @@ class AttendeeListController implements IAttendeeListController {
 
     
     res.render("events/attendee-list", {
-      grouped: result.value,
+      attendees: result.value,
     });
   }
 }
