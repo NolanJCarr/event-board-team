@@ -4,6 +4,7 @@ import type { AttendeeListError } from "./errors";
 import type { ILoggingService } from "../service/LoggingService";
 import { getAuthenticatedUser, type AppSessionStore } from "../session/AppSession";
 import type { UserRole } from "../auth/User";
+import { touchAppSession } from "../session/AppSession";
 
 // ── Public interface ──────────────────────────────────────────────────────────
 
@@ -91,9 +92,11 @@ class AttendeeListController implements IAttendeeListController {
     );
 
     
-    res.render("events/attendee-list", {
-      attendees: result.value,
-    });
+   const session = touchAppSession(store);
+   res.render("events/attendees", {
+    attendees: result.value,
+    session,
+  });
   }
 }
 
