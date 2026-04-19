@@ -303,7 +303,14 @@ class ExpressApp implements IApp {
         await this.eventController.showEvents(req, res, sessionStore(req));
       }),
     );
-
+    
+    this.app.get(
+      "/events/results",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.eventController.showEventsPartial(req, res, sessionStore(req));
+  }),
+);
     this.app.get(
       "/events/new",
       asyncHandler(async (req, res) => {
