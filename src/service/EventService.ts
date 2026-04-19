@@ -19,11 +19,11 @@ class EventService implements IEventService {
     const validTimeframes = ["all", "week", "weekend", undefined];
     // If someone puts in a timeframe that is not allowed, then it throws an error
     if (!validTimeframes.includes(filter.timeframe)) {
-      return Err(InvalidTimeframeError("Invalid timeframe value."));
+      return Err(InvalidTimeframeError("Invalid timeframe value. Must be all, week, or weekend."));
     }
     // If someone types a search query larger than 200 characters, then it throws an error. 
     if (filter.searchQuery !== undefined && filter.searchQuery.trim().length > 200) {
-      return Err(InvalidSearchError("Search query is too long."));
+      return Err(InvalidSearchError("Search query is too long. Must be under 200 characters."));
     }
     // If something is typed in the search bar, but it is empty after trimming, an error is thrown
     if (filter.searchQuery !== undefined && filter.searchQuery.length > 0 && filter.searchQuery.trim().length === 0) {
