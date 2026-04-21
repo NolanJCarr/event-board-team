@@ -41,7 +41,7 @@ export interface IRSVPService {
    *
    * Rejects organizers (staff) and admins.
    */
-  toggleRSVP(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome, RSVPError>>;
+  toggleRSVP(actor: RSVPActor, eventId: string, now?: Date): Promise<Result<RSVPOutcome, RSVPError>>;
 
   /**
    * Return the authenticated user's RSVP dashboard, grouped into upcoming and
@@ -60,7 +60,7 @@ class RSVPService implements IRSVPService {
     return this.repository.setCapacity(eventId, capacity);
   }
 
-  async toggleRSVP(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome, RSVPError>> {
+  async toggleRSVP(actor: RSVPActor, eventId: string, now: Date = new Date()): Promise<Result<RSVPOutcome, RSVPError>> {
     if (actor.role === "admin" || actor.role === "staff") {
       return Err(UnauthorizedError("Only members can RSVP to events."));
     }
@@ -69,7 +69,7 @@ class RSVPService implements IRSVPService {
     if (!event) {
       return Err(EventNotFoundError(`Event ${eventId} not found.`));
     }
-    if (event.status === "cancelled" || event.startTime < new Date()) {
+    if (event.status === "cancelled" || event.startTime < now) {
       return Err(InvalidStateError("Cannot RSVP to a cancelled or past event."));
     }
 
