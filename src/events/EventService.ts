@@ -240,6 +240,10 @@ export class EventService implements IEventService {
     userId: string;
     role: string;
   }): Promise<Result<Event, EventError>> {
+    if (!input.eventId || input.eventId.trim().length === 0) {
+      return Err(InvalidInputError("Event ID is required"));
+    }
+
     const event = await this.eventRepository.findById(input.eventId);
 
     if (!event) {
