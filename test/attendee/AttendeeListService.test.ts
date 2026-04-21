@@ -89,3 +89,37 @@ test("groups attendees by status", async() => {
     expect(result.value.waitlisted.length).toBe(1);
     expect(result.value.cancelled.length).toBe(1);
 });
+
+//Sorting
+test("sorts attendees by RSVP time ascending", async () => {
+  mockEventRepo.findById.mockResolvedValue({
+    id: "event1",
+    organizerId: "user1",
+  });
+
+  mockRSVPRepo.listByEvent.mockResolvedValue(
+    Ok([
+      { userId: "u1", status: "going", createdAt: new Date("2024-05-05") },
+      { userId: "u2", status: "going", createdAt: new Date("2024-04-01") },
+    ])
+  );
+
+  mockUserRepo.findById.mockImplementation(({ id }) =>
+    Ok({ id, displayName: id })
+  );
+
+  const result = await service.getAttendeeList("event1", {
+    userId: "user1",
+    role: "user",
+  });
+
+  expect(result.ok).toBe(true);
+  
+  if (!result.ok) {
+        throw new Error("Expected success but got error");
+    }
+
+  const attending = result.value.attending;
+  expect(attending[0].userId).toBe("u2"); // earlier date first
+  expect(attending[1].userId).toBe("u1");
+});
