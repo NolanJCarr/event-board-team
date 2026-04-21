@@ -38,3 +38,19 @@ test("returns attendee list for organizer", async() => {
     }
     expect(result.value.attending.length).toBe(1);
 });
+
+// Unauthorized Access
+test("rejects non-organizer or non-admin", async() =>{
+    mockEventRepo.findById.mockResolvedValue({
+        id: "event1",
+        organizerId:"owner",
+    });
+    const result = await service.getAttendeeList("event1",{
+        userId: "randomUser",
+        role: "user",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok){
+        expect(result.value.name).toBe("AttendeeListForbiddenError");
+    }
+});
