@@ -1,19 +1,9 @@
 import { type Result, Ok, Err } from "../lib/result";
-import {
-  UnauthorizedError,
-  EventNotFoundError,
-  UnexpectedDependencyError,
-  type RSVPError,
-} from "../rsvp/errors";
+import {UnauthorizedError, EventNotFoundError, InvalidStateError, UnexpectedDependencyError, type RSVPError} from "../rsvp/errors";
 import type { IRSVPRepository, RSVPRecord } from "../repository/RSVPRepository";
 import type { IEventRepository, Event } from "../events/EventRepository";
 import type { UserRole } from "../auth/User";
 
-// ---------------------------------------------------------------------------
-// Domain types
-// ---------------------------------------------------------------------------
-
-/** The status a member ends up in after a successful toggle. Matches the team contract. */
 export type RSVPOutcome = "going" | "waitlisted" | "cancelled";
 
 export interface RSVPActor {
@@ -33,9 +23,6 @@ export interface MyRSVPsDashboard {
   pastAndCancelled: RSVPWithEvent[];
 }
 
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
 
 export interface IRSVPService {
   /**
@@ -76,6 +63,14 @@ class RSVPService implements IRSVPService {
   async toggleRSVP(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome, RSVPError>> {
     if (actor.role === "admin" || actor.role === "staff") {
       return Err(UnauthorizedError("Only members can RSVP to events."));
+    }
+
+    const event = await this.eventRepository.findById(eventId);
+    if (!event) {
+      return Err(EventNotFoundError(`Event ${eventId} not found.`));
+    }
+    if (event.status === "cancelled" || event.startTime < new Date()) {
+      return Err(InvalidStateError("Cannot RSVP to a cancelled or past event."));
     }
 
     const capacityResult = await this.repository.getCapacity(eventId);
@@ -226,9 +221,6 @@ class RSVPService implements IRSVPService {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
 
 export function CreateRSVPService(
   repository: IRSVPRepository,
