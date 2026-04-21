@@ -16,7 +16,7 @@ const VALID_CATEGORIES: EventCategory[] = [
   "volunteer",
   "sports",
   "arts",
-  "tech",
+  "technology",
   "other",
 ];
 

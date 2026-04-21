@@ -1,0 +1,22 @@
+<h1>Attendees</h1>
+
+<h2>Going</h2>
+<ul>
+  <% attendees.attending.forEach(a => { %>
+    <li><%= a.displayName %> - <%= a.createdAt %></li>
+  <% }) %>
+</ul>
+
+<h2>Waitlisted</h2>
+<ul>
+  <% attendees.waitlisted.forEach(a => { %>
+    <li><%= a.displayName %> - <%= a.createdAt %></li>
+  <% }) %>
+</ul>
+
+<h2>Cancelled</h2>
+<ul>
+  <% attendees.cancelled.forEach(a => { %>
+    <li><%= a.displayName %> - <%= a.createdAt %></li>
+  <% }) %>
+</ul>
