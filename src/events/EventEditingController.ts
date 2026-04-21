@@ -7,6 +7,16 @@ import { touchAppSession, type AppSessionStore } from "../session/AppSession";
 export interface IEventEditingController {
   showEditForm(req: Request, res: Response, store: AppSessionStore): Promise<void>;
   updateEvent(req: Request, res: Response, store: AppSessionStore): Promise<void>;
+  cancelEvent(req: Request, res: Response, store: AppSessionStore): Promise<void>;
+}
+
+function formatDateTimeLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 class EventEditingController implements IEventEditingController {
@@ -39,18 +49,6 @@ class EventEditingController implements IEventEditingController {
       return;
     }
 
-    // Fetch the event - we'll check permissions in the service layer when they submit
-    // But we should at least verify the event exists and they have permission to view the edit form
-    const result = await this.eventService.updateEvent({
-      eventId,
-      updates: {}, // Empty updates - just to check permissions
-      userId,
-      role,
-    });
-
-    // Actually, let's use the repository directly to get the event
-    // We need to check if the user can see the edit form
-    // For now, let's just fetch and check permissions manually
     const eventResult = await this.eventService["eventRepository"].findById(eventId);
 
     if (!eventResult) {
@@ -62,7 +60,6 @@ class EventEditingController implements IEventEditingController {
       return;
     }
 
-    // Check if user has permission to edit
     const isOrganizer = eventResult.organizerId === userId;
     const isAdmin = role === "admin";
 
@@ -75,23 +72,18 @@ class EventEditingController implements IEventEditingController {
       return;
     }
 
-    // Format dates for datetime-local input (YYYY-MM-DDTHH:MM format)
-    const formatDateTimeLocal = (date: Date): string => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    };
-
-    res.render("events/edit", {
+    const viewData = {
       session,
       event: eventResult,
       startTimeFormatted: formatDateTimeLocal(eventResult.startTime),
       endTimeFormatted: formatDateTimeLocal(eventResult.endTime),
       pageError: null,
-    });
+    };
+
+    if (req.get("HX-Request") === "true") {
+      return void res.render("event/partials/edit-form", { ...viewData, layout: false });
+    }
+    res.render("events/edit", viewData);
   }
 
   async updateEvent(req: Request, res: Response, store: AppSessionStore): Promise<void> {
@@ -120,9 +112,7 @@ class EventEditingController implements IEventEditingController {
 
     const { title, description, location, category, startTime, endTime, capacity } = req.body;
 
-    // Build the updates object - only include fields that were provided
     const updates: Partial<Event> = {};
-
     if (title !== undefined && typeof title === "string") updates.title = title;
     if (description !== undefined && typeof description === "string") updates.description = description;
     if (location !== undefined && typeof location === "string") updates.location = location;
@@ -136,59 +126,93 @@ class EventEditingController implements IEventEditingController {
       }
     }
 
-    const result = await this.eventService.updateEvent({
-      eventId,
-      updates,
-      userId,
-      role,
-    });
+    const result = await this.eventService.updateEvent({ eventId, updates, userId, role });
 
     if (result.ok === false) {
       this.logger.warn(`updateEvent failed: ${result.value.message}`);
 
-      // Map error types to HTTP status codes
       let statusCode = 400;
-      if (result.value.name === "EventNotFoundError") {
-        statusCode = 404;
-      } else if (result.value.name === "UnauthorizedError") {
-        statusCode = 403;
-      } else if (result.value.name === "InvalidStateError") {
-        statusCode = 409;
-      }
+      if (result.value.name === "EventNotFoundError") statusCode = 404;
+      else if (result.value.name === "UnauthorizedError") statusCode = 403;
+      else if (result.value.name === "InvalidStateError") statusCode = 409;
 
-      // Re-render the edit form with the error
-      // We need to fetch the event again to populate the form
       const eventResult = await this.eventService["eventRepository"].findById(eventId);
-
       if (!eventResult) {
-        res.status(404).render("partials/error", {
-          message: "Event not found.",
-          layout: false,
-        });
+        res.status(404).render("partials/error", { message: "Event not found.", layout: false });
         return;
       }
 
-      const formatDateTimeLocal = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
-      };
-
-      res.status(statusCode).render("events/edit", {
+      const errorData = {
         session,
         event: eventResult,
         startTimeFormatted: formatDateTimeLocal(eventResult.startTime),
         endTimeFormatted: formatDateTimeLocal(eventResult.endTime),
         pageError: result.value.message,
-      });
+      };
+
+      if (req.get("HX-Request") === "true") {
+        return void res.status(statusCode).render("event/partials/edit-form", { ...errorData, layout: false });
+      }
+      res.status(statusCode).render("events/edit", errorData);
       return;
     }
 
     this.logger.info(`Event updated successfully: ${result.value.id}`);
-    // Redirect to the event detail page (Dylan's feature)
+
+    if (req.get("HX-Request") === "true") {
+      return void res.render("event/partials/event-detail", {
+        event: result.value,
+        session,
+        layout: false,
+      });
+    }
+    res.redirect(`/events/${result.value.id}`);
+  }
+
+  async cancelEvent(req: Request, res: Response, store: AppSessionStore): Promise<void> {
+    const session = touchAppSession(store);
+    const userId = session.authenticatedUser?.userId;
+    const role = session.authenticatedUser?.role;
+    const eventId = typeof req.params.id === "string" ? req.params.id : "";
+
+    if (!userId || !role) {
+      res.status(401).render("partials/error", {
+        message: "You must be logged in to cancel events.",
+        layout: false,
+      });
+      return;
+    }
+
+    const result = await this.eventService.updateEvent({
+      eventId,
+      updates: { status: "cancelled" },
+      userId,
+      role,
+    });
+
+    if (result.ok === false) {
+      this.logger.warn(`cancelEvent failed: ${result.value.message}`);
+      let statusCode = 400;
+      if (result.value.name === "EventNotFoundError") statusCode = 404;
+      else if (result.value.name === "UnauthorizedError") statusCode = 403;
+      else if (result.value.name === "InvalidStateError") statusCode = 409;
+
+      res.status(statusCode).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    this.logger.info(`Event cancelled: ${result.value.id}`);
+
+    if (req.get("HX-Request") === "true") {
+      return void res.render("event/partials/event-detail", {
+        event: result.value,
+        session,
+        layout: false,
+      });
+    }
     res.redirect(`/events/${result.value.id}`);
   }
 }

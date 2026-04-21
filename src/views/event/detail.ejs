@@ -1,59 +1,68 @@
 <% if (pageError) { %>
-  <%- include("../partials/error", { message: pageError }) %>
-<% } %>
+    <%- include("../partials/error", { message: pageError }) %>                                                                                                                                                 
+  <% } %>                                                                                                                                                                                                       
+                                                                                                                                                                                                                
+  <% if (event) { %>                                                                                                                                                                                            
+    <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+      <div class="flex items-start justify-between mb-4">
+        <h1 class="text-3xl font-bold text-slate-900"><%= event.title %></h1>                                                                                                                                   
+        <% if (event.status === "draft") { %>
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">Draft</span>                                                                                      
+        <% } else if (event.status === "published") { %>                                                                                                                                                        
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">Published</span>
+        <% } else if (event.status === "cancelled") { %>                                                                                                                                                        
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">Cancelled</span>
+        <% } else if (event.status === "past") { %>                                                                                                                                                             
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-600">Past</span>
+        <% } %>                                                                                                                                                                                                 
+      </div>      
+                                                                                                                                                                                                                
+      <p class="text-slate-600 mb-6"><%= event.description %></p>
 
-<% if (event) { %>
-  <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
-    <div class="flex items-start justify-between mb-4">
-      <h1 class="text-3xl font-bold text-slate-900"><%= event.title %></h1>
-      <% if (event.status === "draft") { %>
-        <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">Draft</span>
-      <% } else if (event.status === "published") { %>
-        <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">Published</span>
-      <% } else if (event.status === "cancelled") { %>
-        <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">Cancelled</span>
-      <% } else if (event.status === "past") { %>
-        <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-600">Past</span>
-      <% } %>
-    </div>
-
-    <p class="text-slate-600 mb-6"><%= event.description %></p>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-      <div>
-        <span class="font-semibold text-slate-700">Location:</span>
-        <span class="text-slate-600 ml-1"><%= event.location %></span>
-      </div>
-
-      <div>
-        <span class="font-semibold text-slate-700">Category:</span>
-        <span class="text-slate-600 ml-1"><%= event.category %></span>
-      </div>
-
-      <div>
-        <span class="font-semibold text-slate-700">Start:</span>
-        <span class="text-slate-600 ml-1"><%= event.startTime.toLocaleDateString() %> at <%= event.startTime.toLocaleTimeString() %></span>
-      </div>
-
-      <div>
-        <span class="font-semibold text-slate-700">End:</span>
-        <span class="text-slate-600 ml-1"><%= event.endTime.toLocaleDateString() %> at <%= event.endTime.toLocaleTimeString() %></span>
-      </div>
-
-      <% if (event.capacity != null) { %>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">                                                                                                                                               
         <div>
-          <span class="font-semibold text-slate-700">Capacity:</span>
-          <span class="text-slate-600 ml-1"><%= event.capacity %></span>
+          <span class="font-semibold text-slate-700">Location:</span>                                                                                                                                           
+          <span class="text-slate-600 ml-1"><%= event.location %></span>
+        </div>                                                                                                                                                                                                  
+   
+        <div>                                                                                                                                                                                                   
+          <span class="font-semibold text-slate-700">Category:</span>
+          <span class="text-slate-600 ml-1"><%= event.category %></span>
         </div>
-      <% } %>
 
-      <div>
-        <span class="font-semibold text-slate-700">Status:</span>
-        <span class="text-slate-600 ml-1"><%= event.status.charAt(0).toUpperCase() + event.status.slice(1) %></span>
+        <div>                                                                                                                                                                                                   
+          <span class="font-semibold text-slate-700">Start:</span>
+          <span class="text-slate-600 ml-1"><%= event.startTime.toLocaleDateString() %> at <%= event.startTime.toLocaleTimeString() %></span>                                                                   
+        </div>                                                                                                                                                                                                  
+   
+        <div>                                                                                                                                                                                                   
+          <span class="font-semibold text-slate-700">End:</span>
+          <span class="text-slate-600 ml-1"><%= event.endTime.toLocaleDateString() %> at <%= event.endTime.toLocaleTimeString() %></span>
+        </div>                                                                                                                                                                                                  
+   
+        <% if (event.capacity != null) { %>                                                                                                                                                                     
+          <div>   
+            <span class="font-semibold text-slate-700">Capacity:</span>
+            <span class="text-slate-600 ml-1"><%= event.capacity %></span>                                                                                                                                      
+          </div>
+        <% } %>                                                                                                                                                                                                 
+                  
+        <div>
+          <span class="font-semibold text-slate-700">Status:</span>
+          <span class="text-slate-600 ml-1"><%= event.status.charAt(0).toUpperCase() + event.status.slice(1) %></span>
+        </div>                                                                                                                                                                                                  
       </div>
-    </div>
-  </section>
-<% } %>
+                                                                                                                                                                                                                
+      <div class="mt-6">                                                                                                                                                                                        
+        <button
+          class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"                                                                                                                     
+          hx-get="/events/<%= event.id %>/attendees"
+          hx-target="#attendee-list"
+          hx-swap="innerHTML"                                                                                                                                                                                   
+        >
+          View Attendees                                                                                                                                                                                        
+        </button> 
+      </div>
 
 <% if (event && session?.authenticatedUser?.role === "user") { %>
   <div class="mt-6 flex items-center gap-4">
@@ -69,6 +78,6 @@
   </div>
 <% } %>
 
-<div class="mt-4">
-  <a href="/home" class="text-blue-600 hover:text-blue-800 font-medium text-sm">&larr; Back to Home</a>
-</div>
+  <div class="mt-4">                                                                                                                                                                                            
+    <a href="/home" class="text-blue-600 hover:text-blue-800 font-medium text-sm">&larr; Back to Home</a>
+  </div>
