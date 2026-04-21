@@ -23,7 +23,7 @@
       <div>
         <span class="font-semibold text-slate-700">Location:</span>
         <span class="text-slate-600 ml-1"><%= event.location %></span>
-      </div>
+      </div>     
 
       <div>
         <span class="font-semibold text-slate-700">Category:</span>
@@ -53,7 +53,21 @@
       </div>
     </div>
   </section>
-<% } %>
+  
+<div class="mt-6">
+      <button
+        class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+        hx-get="/events/<%= event.id %>/attendees"
+        hx-target="#attendee-list"
+        hx-swap="innerHTML"
+      >
+        View Attendees
+      </button>
+    </div>
+
+    <div id="attendee-list" class="mt-6"></div>
+  </section>
+<% } %> 
 
 <div class="mt-4">
   <a href="/home" class="text-blue-600 hover:text-blue-800 font-medium text-sm">&larr; Back to Home</a>
