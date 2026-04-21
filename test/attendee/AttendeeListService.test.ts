@@ -54,3 +54,38 @@ test("rejects non-organizer or non-admin", async() =>{
         expect(result.value.name).toBe("AttendeeListForbiddenError");
     }
 });
+
+//Grouping
+test("groups attendees by status", async() => {
+    mockEventRepo.findById.mockResolvedValue({
+        id: "event1",
+        organizerId: "user1",
+    });
+
+    mockRSVPRepo.listByEvent.mockResolvedValue(
+        Ok([
+            { userId: "u1", status: "going", createdAt: new Date() },
+            { userId: "u2", status: "waitlisted", createdAt: new Date() },
+            { userId: "u3", status: "cancelled", createdAt: new Date() },
+        ])
+    );
+
+    mockUserRepo.findById.mockImplementation(({id}) =>
+        Ok({id, displayName: id})
+    );
+
+    const result = await service.getAttendeeList("event1",{
+        userId: "user1",
+        role: "user",
+    });
+
+    expect(result.ok).toBe(true);
+
+    if (!result.ok) {
+        throw new Error("Expected success but got error");
+    }
+
+    expect(result.value.attending.length).toBe(1);
+    expect(result.value.waitlisted.length).toBe(1);
+    expect(result.value.cancelled.length).toBe(1);
+});
