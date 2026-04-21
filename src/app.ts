@@ -284,6 +284,14 @@ class ExpressApp implements IApp {
           return;
         }
 
+        if (this.isHtmxRequest(req)) {
+          return res.render("event/partials/event-detail", {
+            event: result.value,
+            session: browserSession,
+            layout: false,
+          });
+        }
+
         res.render("event/detail", {
           session: browserSession,
           event: result.value,
@@ -348,6 +356,16 @@ class ExpressApp implements IApp {
           return;
         }
         await this.eventEditingController.updateEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id/cancel",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can cancel events.")) {
+          return;
+        }
+        await this.eventEditingController.cancelEvent(req, res, sessionStore(req));
       }),
     );
 
