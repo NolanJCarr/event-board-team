@@ -1,19 +1,9 @@
 import { type Result, Ok, Err } from "../lib/result";
-import {
-  UnauthorizedError,
-  EventNotFoundError,
-  UnexpectedDependencyError,
-  type RSVPError,
-} from "../rsvp/errors";
+import {UnauthorizedError, EventNotFoundError, InvalidStateError, UnexpectedDependencyError, type RSVPError} from "../rsvp/errors";
 import type { IRSVPRepository, RSVPRecord } from "../repository/RSVPRepository";
 import type { IEventRepository, Event } from "../events/EventRepository";
 import type { UserRole } from "../auth/User";
 
-// ---------------------------------------------------------------------------
-// Domain types
-// ---------------------------------------------------------------------------
-
-/** The status a member ends up in after a successful toggle. Matches the team contract. */
 export type RSVPOutcome = "going" | "waitlisted" | "cancelled";
 
 export interface RSVPActor {
@@ -33,9 +23,6 @@ export interface MyRSVPsDashboard {
   pastAndCancelled: RSVPWithEvent[];
 }
 
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
 
 export interface IRSVPService {
   /**
@@ -54,7 +41,7 @@ export interface IRSVPService {
    *
    * Rejects organizers (staff) and admins.
    */
-  toggleRSVP(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome, RSVPError>>;
+  toggleRSVP(actor: RSVPActor, eventId: string, now?: Date): Promise<Result<RSVPOutcome, RSVPError>>;
 
   /**
    * Return the authenticated user's RSVP dashboard, grouped into upcoming and
@@ -73,9 +60,17 @@ class RSVPService implements IRSVPService {
     return this.repository.setCapacity(eventId, capacity);
   }
 
-  async toggleRSVP(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome, RSVPError>> {
+  async toggleRSVP(actor: RSVPActor, eventId: string, now: Date = new Date()): Promise<Result<RSVPOutcome, RSVPError>> {
     if (actor.role === "admin" || actor.role === "staff") {
       return Err(UnauthorizedError("Only members can RSVP to events."));
+    }
+
+    const event = await this.eventRepository.findById(eventId);
+    if (!event) {
+      return Err(EventNotFoundError(`Event ${eventId} not found.`));
+    }
+    if (event.status === "cancelled" || event.startTime < now) {
+      return Err(InvalidStateError("Cannot RSVP to a cancelled or past event."));
     }
 
     const capacityResult = await this.repository.getCapacity(eventId);
@@ -226,9 +221,6 @@ class RSVPService implements IRSVPService {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
 
 export function CreateRSVPService(
   repository: IRSVPRepository,
