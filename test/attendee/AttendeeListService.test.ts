@@ -12,3 +12,29 @@ const service = CreateAttendeeListService(
     mockRSVPRepo as any,
     mockUserRepo as any
 );
+
+//Authorized Access
+
+test("returns attendee list for organizer", async() => {
+    mockEventRepo.findById.mockResolvedValue({
+        id: "event1",
+        organizerId: "user1",
+    });
+    mockRSVPRepo.listByEvent.mockResolvedValue(
+        Ok([
+            {userId:"u1", status: "going", createdAt: new Date("2024-03-05")}
+        ])
+    );
+    mockUserRepo.findById.mockResolvedValue(
+        Ok({id: "u1", displayName: "Alice"})
+    );
+    const result = await service.getAttendeeList("event1",{
+        userId: "user1",
+        role: "user",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok === false){
+        throw new Error("Expected success but got error");
+    }
+    expect(result.value.attending.length).toBe(1);
+});
