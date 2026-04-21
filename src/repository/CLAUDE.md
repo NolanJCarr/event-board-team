@@ -14,28 +14,41 @@ Persistence contracts and in-memory implementations for the data layer. The repo
 
 | File | Purpose |
 |---|---|
-| `UserRepository.ts` | `IUserRepository` interface — the persistence contract for users |
-| `InMemoryUserRepository.ts` | In-memory impl seeded with `DEMO_USERS`; swap for Prisma impl in Sprint 3 |
-| `EventRepository.ts` | `IEventRepository` interface (filter-based `getEvents`), error types, `GetEventsFilter`, and Prisma-backed impl |
-| `InMemoryEventRepository.ts` | In-memory impl of the filter-based `IEventRepository`; used by `EventService` |
-| `InMemoryRSVPRepository.ts` | In-memory impl of `IRSVPRepository`; used by `RSVPService` |
+| `UserRepository.ts` | `IUserRepository` interface — persistence contract for users |
+| `InMemoryUserRepository.ts` | In-memory impl seeded with `DEMO_USERS`; swap for Prisma in Sprint 3 |
+| `EventRepository.ts` | `IEventRepository` filter-based interface — `getEvents(filter)` returning `Result<Event[], EventError>`. Used by `EventService` for the event list/filter/search features. |
+| `InMemoryEventRepository.ts` | In-memory impl of the filter-based `IEventRepository` |
+| `RSVPRepository.ts` | `IRSVPRepository` interface + `RSVPRecord` type — used by RSVPService and AttendeeListService |
+| `InMemoryRSVPRepository.ts` | In-memory impl of `IRSVPRepository` |
 
-> **Note — two event repository interfaces exist:**
-> - `src/repository/EventRepository.ts` — filter-based `getEvents(filter)` returning `Result<Event[], EventError>`. This is what `EventService` depends on.
-> - `src/events/EventRepository.ts` — full CRUD interface (`create`, `findById`, `findAll`, `update`, `findByOrganizerId`). Used by event creation/editing features.
+> **Two EventRepository interfaces exist in the project:**
+> - `src/repository/EventRepository.ts` — filter-based `getEvents(filter)`. Used by the event list/filter/search service.
+> - `src/events/EventRepository.ts` — full CRUD (`create`, `findById`, `findAll`, `update`, `findByOrganizerId`). Used by creation/editing/detail features.
 >
-> `src/repository/InMemoryEventRepository.ts` implements the **filter-based** interface. `src/events/InMemoryEventRepository.ts` implements the **CRUD** interface. Do not confuse them.
+> Do not confuse them. Each has its own in-memory implementation.
+
+## RSVPRecord Type
+
+```ts
+interface RSVPRecord {
+  id: string;
+  userId: string;
+  eventId: string;
+  status: RSVPStatus;   // "going" | "waitlisted" | "cancelled"
+  createdAt: Date;
+}
+```
 
 ## DEMO_USERS seed (InMemoryUserRepository)
 Seeds three roles (`admin`, `staff`, `user`) for local development. Passwords stored as `salt:hash` (scrypt via `auth/PasswordHasher.ts`).
 
 ## Adding a Repository (Sprint 1 pattern)
 
-1. Define `IFooRepository` in a new `FooRepository.ts` file — list every method with its `Result<T, E>` return type.
+1. Define `IFooRepository` in a new `FooRepository.ts` — list every method with its `Result<T, E>` return type.
 2. Implement `InMemoryFooRepository` in a separate file.
 3. Export a factory: `CreateInMemoryFooRepository(): IFooRepository`.
 4. Register in `composition.ts`; inject into the relevant service constructor.
 
 ## Sprint 3 Migration
 
-When switching to Prisma, implement the **same** `IFooRepository` interface backed by the Prisma client. Swap the factory call in `composition.ts`. The service and controller layers must not change — if they do, the layers were not properly separated.
+Implement the **same** `IFooRepository` interface backed by the Prisma client. Swap the factory call in `composition.ts`. The service and controller layers must not change — if they do, the layers were not properly separated.

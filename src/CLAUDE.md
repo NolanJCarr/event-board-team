@@ -22,7 +22,7 @@ Route (app.ts)  →  Controller  →  Service  →  Repository
 | **Service** | All business logic. No knowledge of HTTP. Returns `Result<T, E>`. Receives acting-user identity as parameters — **never reads the session**. |
 | **Repository** | Data storage only. Sprint 1–2: in-memory. Sprint 3: Prisma. |
 
-**Composition root**: `composition.ts` wires all dependencies. All `new` calls and factory calls happen here — never inside controllers or services. Currently wired: `AuthController`, `RSVPController`, `EventController`. The `CreateApp` factory in `app.ts` accepts all three controllers plus the logger.
+**Composition root**: `composition.ts` wires all dependencies. All `new` calls and factory calls happen here — never inside controllers or services.
 
 ## Result Pattern (mandatory from Sprint 1)
 
@@ -77,6 +77,8 @@ Every feature must have integration tests that:
 - Run against the **in-memory repository** (not mocks of the repository)
 - Continue to pass without modification after the Sprint 3 Prisma migration
 
+Tests live in `test/` at the project root (e.g., `test/rsvp/`, `test/events/`). See `test/CLAUDE.md`.
+
 ## Feature Ownership
 
 | # | Feature | Owner |
@@ -91,7 +93,25 @@ Every feature must have integration tests that:
 | 8 | Organizer Event Dashboard | Dylan Wang |
 | 9 | Waitlist Promotion | Emily Chu |
 | 10 | Event Search | Megan Wells |
+| 11 | Past Event Archiving | TBD |
 | 12 | Attendee List | Emily Chu |
+| 13 | Event Comments | TBD |
+| 14 | Save for Later | TBD |
+
+## Module Map
+
+| Directory | Features |
+|---|---|
+| `src/auth/` | Authentication, user management |
+| `src/events/` | Features 1, 2, 3, 5, 6, 8, 10 — event CRUD, publishing, filtering, search |
+| `src/rsvp/` | Features 4, 7, 9 — RSVP toggle, dashboard, waitlist |
+| `src/attendee/` | Feature 12 — attendee list |
+| `src/event/` | Shared RSVP domain types used by the organizer dashboard |
+| `src/service/` | All service interfaces and implementations |
+| `src/repository/` | All repository interfaces and in-memory implementations |
+| `src/session/` | Session helpers |
+| `src/lib/` | Shared utilities (`Result` type) |
+| `src/views/` | EJS templates |
 
 ## Data Layer
 Sprint 1–2: In-memory repositories (no database). Sprint 3: Swap in Prisma-backed implementations in `composition.ts` — service and controller layers must not change.
@@ -102,4 +122,5 @@ Sprint 1–2: In-memory repositories (no database). Sprint 3: Swap in Prisma-bac
 3. Implement the service — returns `Result<T, E>`, accepts acting-user identity as a parameter.
 4. Wire everything in `composition.ts`.
 5. Add routes to `app.ts` using the existing auth guard pattern.
-6. Views in `src/views/`; HTMX partials in `src/views/partials/`.
+6. Views in `src/views/`; HTMX partials in `src/views/<feature>/partials/`.
+7. Tests in `test/<feature>/`.

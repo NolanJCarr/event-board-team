@@ -6,9 +6,7 @@
 2. **No HTTP knowledge** — services have no access to `req`, `res`, or `session`. The controller extracts what's needed and passes it in as plain parameters.
 3. **Acting-user identity is a parameter** — accept a typed actor object (e.g., `{ userId, role }`) when the operation depends on who is doing it.
 4. **Export an interface** (`IFooService`) and a **factory function** (`CreateFooService()`), not the class directly.
-5. **Singleton pattern**: Use a module-level `let instance: IFooService | null = null` guard inside the factory if the service is stateless/shared.
-6. **Wire in `composition.ts`**: All dependency injection happens there — never instantiate services inside controllers or routes.
-7. Keep services focused — one responsibility per service file.
+5. **Wire in `composition.ts`**: All dependency injection happens there — never instantiate services inside controllers or routes.
 
 ---
 
@@ -16,100 +14,94 @@
 
 Singleton logger with ISO-timestamped output. Implements `ILoggingService`.
 
-### Interface
-
 ```ts
 interface ILoggingService {
-  info(message: string): void;   // console.log  — ISO timestamp + [INFO]
-  warn(message: string): void;   // console.warn — ISO timestamp + [WARN]
-  error(message: string): void;  // console.error — ISO timestamp + [ERROR]
+  info(message: string): void;
+  warn(message: string): void;
+  error(message: string): void;
 }
-```
 
-### Factory
-
-```ts
 CreateLoggingService(): ILoggingService  // returns/creates the singleton
 ```
 
-### Usage Across the App
-
-- **`composition.ts`**: Calls `CreateLoggingService()` and injects the instance into `App` and `AuthController` via constructor.
-- **`app.ts` / `AuthController.ts`**: Accept `ILoggingService` as a constructor parameter — always depend on the interface, never the concrete class.
-- Tests or alternate compositions can inject a mock by passing a custom `ILoggingService` to `createComposedApp(logger?)`.
-
 ---
 
-## RSVPService (Feature 4 — Nolan Carreiro)
+## RSVPService (Features 4 & 7 — Nolan Carreiro)
 
-Handles all RSVP toggle logic for events. Implements `IRSVPService`.
+See `src/rsvp/CLAUDE.md` for full documentation. Summary:
 
-### Error Types
-
-```ts
-export type RSVPError =
-  | { name: "UnauthorizedError";         message: string }  // wrong role
-  | { name: "EventNotFoundError";        message: string }  // event doesn't exist
-  | { name: "InvalidStateError";         message: string }  // cancelled or past (Sprint 2+)
-  | { name: "UnexpectedDependencyError"; message: string }  // repository failure
-```
-
-Defined in `src/rsvp/errors.ts`. Names match the team contract in `contracts-roles/CONTRACTS.md`.
-
-### Actor
+- `toggleRSVP(actor, event_id)` — handles new/active/cancelled RSVP states
+- `registerEvent(event_id, capacity)` — Sprint 1 stand-in, removed in Sprint 3
+- Rejects `admin` and `staff` roles with `UnauthorizedError`
+- Automatically promotes first waitlisted member when an attending member cancels (Feature 9 coordination)
 
 ```ts
-export interface RSVPActor {
-  userId: string;
-  role: "admin" | "staff" | "user";
-}
-```
-
-The controller reads `role` and `userId` from the session and passes an `RSVPActor` down — the service never touches the session.
-
-### Interface
-
-```ts
-export interface IRSVPService {
+interface IRSVPService {
   registerEvent(event_id: string, capacity: number): void;
   toggleRSVP(actor: RSVPActor, event_id: string): Result<RSVPOutcome, RSVPError>;
 }
 ```
 
-`registerEvent` is a Sprint 1 stand-in — in Sprint 3 it is removed and capacity is queried from Prisma.
+---
 
-### Toggle Logic (three internal cases)
+## EventService (Features 1, 2, 3 — Haamed Rahman / Dylan Wang)
 
-| Current state | Outcome |
+Handles event creation, detail lookup, and editing. Lives in `src/events/EventService.ts`.
+
+```ts
+interface IEventService {
+  createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
+  getEventById(input: { eventId: string; userId: string; role: string }): Promise<Result<Event, EventError>>;
+  updateEvent(input: UpdateEventInput): Promise<Result<Event, EventError>>;
+}
+```
+
+### Validation Rules (createEvent / updateEvent)
+- All required fields must be non-empty strings
+- `category` must be one of: `social | educational | volunteer | sports | arts | technology | other`
+- `endTime` must be after `startTime`
+- `capacity` must be ≥ 1 if provided
+
+### Visibility Rule (getEventById)
+- Published events: visible to all authenticated users
+- Draft events: visible only to the organizer who created them and admins
+- All others → `EventNotFoundError`
+
+### Error → HTTP Mapping
+| Error name | Status |
 |---|---|
-| No existing record | `"attending"` if capacity allows, `"waitlisted"` if full |
-| Active RSVP (`attending` or `waitlisted`) | `"cancelled"`; if attending, promote first waitlisted member |
-| Previously cancelled | Same capacity check as a new RSVP |
-
-The controller does **not** determine which case applies — that is business logic and lives in the service.
-
-### Rejection Rules
-
-- `admin` and `staff` roles → `Unauthorized`
-- Event not registered (Sprint 1) / not found (Sprint 3) → `EventNotFound`
-- Cancelled or past event → `InvalidEventState` *(enforced Sprint 2+)*
-
-### Controller Mapping
-
-| RSVPError name | HTTP status |
-|---|---|
+| `InvalidInputError` | 400 |
 | `UnauthorizedError` | 403 |
 | `EventNotFoundError` | 404 |
 | `InvalidStateError` | 409 |
-| `UnexpectedDependencyError` | 500 |
 
-### Sprint Roadmap
+---
 
-| Sprint | Goal |
-|---|---|
-| 1 | In-memory store, `toggleRSVP` route + service logic, role rejection |
-| 2 | Expand error types (cancelled/past events). Tests for all toggle states and capacity. HTMX button — no full reload. |
-| 3 | Replace in-memory store with Prisma. Capacity check against live data. Tests still pass. |
-| 4 | Style RSVP button per state. Alpine.js visual transition on state change. |
+## AttendeeListService (Feature 12 — Emily Chu)
 
-**Coordination note (Feature 9 — Waitlist Promotion):** Emily Chu's feature extends the cancellation path. Agree on the `toggleRSVP` return shape and waitlist-promotion side effect before Sprint 1 ends — changing the interface after she builds against it is an Integration Compromise.
+Retrieves RSVPs for an event, joined with user display names, grouped by status. Lives in `src/service/AttendeeListService.ts`.
+
+```ts
+interface IAttendeeListService {
+  getAttendeeList(input: { eventId: string; userId: string; role: string }): Promise<Result<AttendeeList, AttendeeListError>>;
+}
+```
+
+- Organizer of the event or admin → allowed
+- Member → `AttendeeListForbiddenError`
+- Event not found → `AttendeeListNotFoundError`
+- User lookup failure → `AttendeeListUserLookupError`
+
+Returns `AttendeeList` with `attending`, `waitlisted`, and `cancelled` arrays, each sorted by `rsvpedAt` ascending.
+
+---
+
+## DashboardService (Feature 8 — Dylan Wang)
+
+Retrieves events grouped by status for the organizer dashboard. Lives in `src/event/DashboardService.ts`.
+
+- Organizer → sees their own events only
+- Admin → sees all events
+- Member → `UnauthorizedError`
+
+Returns `{ draft: Event[], published: Event[], pastOrCancelled: Event[] }` with attendee counts.
