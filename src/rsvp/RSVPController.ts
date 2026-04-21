@@ -57,7 +57,12 @@ class RSVPController implements IRSVPController {
       return;
     }
     this.logger.info(`User ${person.userId} toggled RSVP on event ${eventId}: ${result.value}`);
-    // Sprint 2: return an HTMX partial instead of redirecting.
+    if (req.get("HX-Request") === "true") {
+      return res.render("event/partials/rsvp-feedback", {
+        rsvpStatus: result.value,
+        layout: false,
+      });
+    }
     res.redirect(`/events/${eventId}`);
   }
 

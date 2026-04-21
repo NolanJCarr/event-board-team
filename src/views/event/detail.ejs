@@ -56,11 +56,17 @@
 <% } %>
 
 <% if (event && session?.authenticatedUser?.role === "user") { %>
-  <form method="POST" action="/events/<%= event.id %>/rsvp" class="mt-6">
-    <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+  <div class="mt-6 flex items-center gap-4">
+    <button
+      hx-post="/events/<%= event.id %>/rsvp"
+      hx-target="#rsvp-feedback-<%= event.id %>"
+      hx-swap="innerHTML"
+      class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+    >
       RSVP
     </button>
-  </form>
+    <div id="rsvp-feedback-<%= event.id %>"></div>
+  </div>
 <% } %>
 
 <div class="mt-4">
