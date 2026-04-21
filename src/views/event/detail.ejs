@@ -55,6 +55,14 @@
   </section>
 <% } %>
 
+<% if (event && session?.authenticatedUser?.role === "user") { %>
+  <form method="POST" action="/events/<%= event.id %>/rsvp" class="mt-6">
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+      RSVP
+    </button>
+  </form>
+<% } %>
+
 <div class="mt-4">
   <a href="/home" class="text-blue-600 hover:text-blue-800 font-medium text-sm">&larr; Back to Home</a>
 </div>

@@ -37,7 +37,8 @@ class InMemoryRSVPRepository implements IRSVPRepository {
   async findRSVP(userId: string, eventId: string): Promise<Result<RSVPRecord | null, RSVPError>> {
     try {
       return Ok(this.rsvps.get(this.recordKey(userId, eventId)) ?? null);
-    } catch {
+    } 
+    catch {
       return Err(UnexpectedDependencyError("Failed to find RSVP record."));
     }
   }
@@ -48,7 +49,8 @@ class InMemoryRSVPRepository implements IRSVPRepository {
         (r) => r.userId === userId,
       );
       return Ok(records);
-    } catch {
+    } 
+    catch {
       return Err(UnexpectedDependencyError("Failed to fetch RSVPs for user."));
     }
   }
@@ -57,7 +59,8 @@ class InMemoryRSVPRepository implements IRSVPRepository {
     try {
       this.rsvps.set(this.recordKey(record.userId, record.eventId), record);
       return Ok(record);
-    } catch {
+    } 
+    catch {
       return Err(UnexpectedDependencyError("Failed to save RSVP record."));
     }
   }
@@ -126,7 +129,8 @@ class InMemoryRSVPRepository implements IRSVPRepository {
       const list = this.waitlists.get(eventId);
       if (!list || list.length === 0) return Ok(null);
       return Ok(list.shift()!);
-    } catch {
+    } 
+    catch {
       return Err(UnexpectedDependencyError("Failed to shift waitlist."));
     }
   }
