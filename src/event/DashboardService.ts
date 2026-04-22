@@ -27,7 +27,14 @@ export function CreateDashboardService(
         return Err(UnauthorizedError("Authentication required to view dashboard."));
       }
 
-      const events = await eventRepo.findByOrganizerId(userId);
+      if (role !== "admin" && role !== "staff") {
+        return Err(UnauthorizedError("Only organizers can view the dashboard."));
+      }
+
+      const events =
+        role === "admin"
+          ? await eventRepo.findAll()
+          : await eventRepo.findByOrganizerId(userId);
 
       const withCounts: IEventWithCounts[] = await Promise.all(
         events.map(async (event) => {
