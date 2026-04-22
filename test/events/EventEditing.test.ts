@@ -75,7 +75,7 @@ function buildAppWithEvents(events: Event[]): Express {
 
   const eventController = CreateEventController(filterEventService, logger);
   const eventCreationController = CreateEventCreationController(crudEventService, logger);
-  const eventEditingController = CreateEventEditingController(crudEventService, logger);
+  const eventEditingController = CreateEventEditingController(crudEventService, logger, dashboardService);
   const attendeeListService = CreateAttendeeListService(
     sharedEventRepository,
     rsvpRepository,
@@ -292,7 +292,7 @@ describe("POST /events/:id — Event Editing", () => {
         .send(updateData);
 
       expect(res.status).toBe(409);
-      expect(res.text).toContain("cannot edit");
+      expect(res.text).toContain("Cannot edit a cancelled event");
     });
 
     it("returns 409 InvalidStateError when trying to edit past event", async () => {
@@ -321,7 +321,7 @@ describe("POST /events/:id — Event Editing", () => {
         .send(updateData);
 
       expect(res.status).toBe(409);
-      expect(res.text).toContain("cannot edit");
+      expect(res.text).toContain("Cannot edit a past event");
     });
 
     it("returns 400 InvalidInputError when title is empty", async () => {
@@ -377,7 +377,7 @@ describe("POST /events/:id — Event Editing", () => {
         .send(updateData);
 
       expect(res.status).toBe(400);
-      expect(res.text).toContain("End time must be after start time");
+      expect(res.text).toContain("Event end time must be after start time");
     });
 
     it("returns 401 when user is not authenticated", async () => {
@@ -399,7 +399,7 @@ describe("POST /events/:id — Event Editing", () => {
         .send(updateData);
 
       expect(res.status).toBe(401);
-      expect(res.text).toContain("must be logged in");
+      expect(res.text).toContain("Please log in");
     });
   });
 
@@ -472,21 +472,23 @@ describe("POST /events/:id — Event Editing", () => {
       expect(res2.status).toBe(403);
     });
 
-    it("preserves form data on validation error", async () => {
+    it("re-renders edit form with error message on validation error", async () => {
       const event = makeEvent({
         id: "evt-13",
+        title: "Original Title",
+        description: "Original description",
         organizerId: "user-staff",
       });
       const app = buildAppWithEvents([event]);
       const cookie = await loginAs(app, "staff@app.test");
 
       const updateData = {
-        title: "Preserved Title",
-        description: "Preserved description",
-        location: "Preserved location",
+        title: "Attempted New Title",
+        description: "Attempted new description",
+        location: "New location",
         category: "social",
         startTime: "2026-06-01T18:00",
-        endTime: "2026-06-01T10:00", // Invalid
+        endTime: "2026-06-01T10:00", // Invalid: ends before start
       };
 
       const res = await request(app)
@@ -496,9 +498,10 @@ describe("POST /events/:id — Event Editing", () => {
         .type("form")
         .send(updateData);
 
+      // Form re-renders with error message and current event data
       expect(res.status).toBe(400);
-      expect(res.text).toContain("Preserved Title");
-      expect(res.text).toContain("Preserved description");
+      expect(res.text).toContain("Event end time must be after start time");
+      expect(res.text).toContain("Edit Event");
     });
 
     it("can remove capacity by setting it to empty string", async () => {
@@ -590,12 +593,14 @@ describe("GET /events/:id/edit — Event Edit Form", () => {
     expect(res.status).toBe(404);
   });
 
-  it("returns 401 for unauthenticated users", async () => {
+  it("redirects unauthenticated users to login", async () => {
     const event = makeEvent({ id: "evt-18" });
     const app = buildAppWithEvents([event]);
 
     const res = await request(app).get("/events/evt-18/edit");
 
-    expect(res.status).toBe(401);
+    // Auth middleware redirects unauthenticated GET requests to login
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe("/login");
   });
 });
