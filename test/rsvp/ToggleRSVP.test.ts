@@ -176,4 +176,46 @@ describe("RSVPService.toggleRSVP", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.value.name).toBe("InvalidStateError");
   });
+  
+  // tests for waitlist promotion
+  it("does not promote anyone when waitlist is empty", async()=>{
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE})]);
+
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1",1);
+
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);
+
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);
+
+    const count = await rsvpRepo.countAttendees("evt-1");
+    expect(count.ok).toBe(true);
+    if (count.ok) expect(count.value).toBe(0); 
+  });
+
+  it("returns correct wailtist positions", async() =>{
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE})]);
+
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 1);
+
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);
+    await service.toggleRSVP(MEMBER2, "evt-1", NOW);
+
+    const MEMBER3 = {userId: "user-3", role: "user" as const};
+    await service.toggleRSVP(MEMBER3, "evt-1", NOW);
+
+    const pos1 = await rsvpRepo.getWaitlistPosition(MEMBER2.userId, "evt-1");
+    const pos2 = await rsvpRepo.getWaitlistPosition(MEMBER3.userId, "evt-1");
+
+    expect(pos1.ok).toBe(true);
+    expect(pos2.ok).toBe(true);
+
+    if(pos1.ok) expect(pos1.value).toBe(1);
+    if(pos2.ok) expect(pos2.value).toBe(2);
+  });
 });
