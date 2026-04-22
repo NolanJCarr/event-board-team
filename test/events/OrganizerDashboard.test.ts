@@ -75,7 +75,7 @@ function buildAppWithEvents(events: Event[]): BuiltApp {
 
   const eventController = CreateEventController(filterEventService, logger);
   const eventCreationController = CreateEventCreationController(crudEventService, logger);
-  const eventEditingController = CreateEventEditingController(crudEventService, logger);
+  const eventEditingController = CreateEventEditingController(crudEventService, logger, dashboardService);
   const attendeeListService = CreateAttendeeListService(
     sharedEventRepository,
     rsvpRepository,
