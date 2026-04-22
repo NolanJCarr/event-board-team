@@ -1,154 +1,107 @@
-<div class="max-w-4xl mx-auto px-4 py-8">                                                                                                                                                                     
-    <div class="flex justify-between items-center mb-6">                                                                                                                                                        
-      <h1 class="text-3xl font-bold">Upcoming Events</h1>                                                                                                                                                       
-      <% if (session?.authenticatedUser?.role === 'admin' || session?.authenticatedUser?.role === 'staff') { %>                                                                                                 
-        <a                                                                                                                                                                                                      
-          href="/events/new"                                                                                                                                                                                    
-          class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium no-underline"                                                                                                        
-        >                                                                                                                                                                                                       
-          Create New Event
-        </a>                                                                                                                                                                                                    
-      <% } %>     
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Upcoming Events</h1>
+    <% if (session?.authenticatedUser?.role === 'admin' || session?.authenticatedUser?.role === 'staff') { %>
+      
+        href="/events/new"
+        class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium no-underline"
+      >
+        Create New Event
+      </a>
+    <% } %>
+  </div>
+
+  <form
+    method="GET"
+    action="/events"
+    hx-get="/events/results"
+    hx-target="#event-results"
+    hx-push-url="true"
+    class="bg-white rounded-lg shadow p-6 mb-8"
+  >
+    <div class="mb-4">
+      <label for="search" class="block text-sm font-medium text-gray-700 mb-1">
+        Search Events
+      </label>
+      <input
+        type="text"
+        id="search"
+        name="search"
+        value="<%= searchQuery %>"
+        placeholder="Search by title, description, or location..."
+        hx-get="/events/results"
+        hx-target="#event-results"
+        hx-push-url="true"
+        hx-trigger="input changed delay:400ms"
+        hx-include="[name='category'],[name='timeframe']"
+        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
     </div>
 
-    <form                                                                                                                                                                                                       
-      method="GET"
-      action="/events"                                                                                                                                                                                          
-      hx-get="/events/results"
-      hx-target="#event-results"
-      hx-push-url="true"
-      class="bg-white rounded-lg shadow p-6 mb-8"
-    >                                                                                                                                                                                                           
-      <div class="mb-4">
-        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">                                                                                                                               
-          Search Events
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-1">
+        <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+          Category
         </label>
-        <input
-          type="text"
-          id="search"
-          name="search"                                                                                                                                                                                         
-          value="<%= searchQuery %>"
-          placeholder="Search by title, description, or location..."                                                                                                                                            
+        <select
+          id="category"
+          name="category"
           hx-get="/events/results"
           hx-target="#event-results"
           hx-push-url="true"
-          hx-trigger="input changed delay:400ms"                                                                                                                                                                
-          hx-include="[name='category'],[name='timeframe']"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"                                                                                
-        />                                                                                                                                                                                                      
+          hx-trigger="change"
+          hx-include="[name='search'],[name='timeframe']"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="" <%= category === "" ? "selected" : "" %>>All Categories</option>
+          <option value="music" <%= category === "music" ? "selected" : "" %>>Music</option>
+          <option value="sports" <%= category === "sports" ? "selected" : "" %>>Sports</option>
+          <option value="food" <%= category === "food" ? "selected" : "" %>>Food & Drink</option>
+          <option value="arts" <%= category === "arts" ? "selected" : "" %>>Arts & Culture</option>
+          <option value="community" <%= category === "community" ? "selected" : "" %>>Community</option>
+          <option value="technology" <%= category === "technology" ? "selected" : "" %>>Technology</option>
+          <option value="volunteer" <%= category === "volunteer" ? "selected" : "" %>>Volunteer</option>
+          <option value="other" <%= category === "other" ? "selected" : "" %>>Other</option>
+        </select>
       </div>
-                                                                                                                                                                                                                
-      <div class="flex flex-col sm:flex-row gap-4">
-        <div class="flex-1">
-          <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
-            Category                                                                                                                                                                                            
-          </label>
-          <select                                                                                                                                                                                               
-            id="category"
-            name="category"
-            hx-get="/events/results"
-            hx-target="#event-results"
-            hx-push-url="true"
-            hx-trigger="change"                                                                                                                                                                                 
-            hx-include="[name='search'],[name='timeframe']"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"                                                                              
-          >                                                                                                                                                                                                     
-            <option value="" <%= category === "" ? "selected" : "" %>>All Categories</option>
-            <option value="music" <%= category === "music" ? "selected" : "" %>>Music</option>                                                                                                                  
-            <option value="sports" <%= category === "sports" ? "selected" : "" %>>Sports</option>                                                                                                               
-            <option value="food" <%= category === "food" ? "selected" : "" %>>Food & Drink</option>
-            <option value="arts" <%= category === "arts" ? "selected" : "" %>>Arts & Culture</option>                                                                                                           
-            <option value="community" <%= category === "community" ? "selected" : "" %>>Community</option>
-            <option value="technology" <%= category === "technology" ? "selected" : "" %>>Technology</option>                                                                                                   
-            <option value="volunteer" <%= category === "volunteer" ? "selected" : "" %>>Volunteer</option>                                                                                                      
-            <option value="other" <%= category === "other" ? "selected" : "" %>>Other</option>
-          </select>                                                                                                                                                                                             
-        </div>    
-                                                                                                                                                                                                                
-        <div class="flex-1">
-          <label for="timeframe" class="block text-sm font-medium text-gray-700 mb-1">
-            Timeframe
-          </label>
-          <select
-            id="timeframe"                                                                                                                                                                                      
-            name="timeframe"
-            hx-get="/events/results"                                                                                                                                                                            
-            hx-target="#event-results"
-            hx-push-url="true"
-            hx-trigger="change"
-            hx-include="[name='search'],[name='category']"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"                                                                              
-          >
-            <option value="all" <%= timeframe === "all" ? "selected" : "" %>>All Upcoming</option>                                                                                                              
-            <option value="week" <%= timeframe === "week" ? "selected" : "" %>>This Week</option>                                                                                                               
-            <option value="weekend" <%= timeframe === "weekend" ? "selected" : "" %>>This Weekend</option>
-          </select>                                                                                                                                                                                             
-        </div>    
-      </div>                                                                                                                                                                                                    
-                  
-      <div class="mt-4">
-        <button
-          type="submit"
-          class="bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition"
-        >                                                                                                                                                                                                       
-          Search
-        </button>                                                                                                                                                                                               
-        <a        
-          href="/events"
-          class="ml-3 text-sm text-gray-500 hover:text-gray-700 underline"
-        >                                                                                                                                                                                                       
-          Clear filters
-        </a>                                                                                                                                                                                                    
-      </div>      
-    </form>
 
-    <div id="event-results">                                                                                                                                                                                    
-      <% if (events.length === 0) { %>
-        <div class="text-center text-gray-500 py-12">                                                                                                                                                           
-          <p class="text-lg">No events found.</p>
-          <p class="text-sm mt-1">Try adjusting your search or filters.</p>
-        </div>                                                                                                                                                                                                  
-      <% } else { %>
-        <p class="text-sm text-gray-500 mb-4"><%= events.length %> event(s) found</p>                                                                                                                           
-        <div class="grid gap-4">
-          <% events.forEach(function(event) { %>                                                                                                                                                                
-            <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
-              <div class="flex items-start justify-between">                                                                                                                                                    
-                <div>
-                  <h2 class="text-xl font-semibold text-gray-900">
-                    <a href="/events/<%= event.id %>" class="text-gray-900 no-underline hover:text-blue-700 hover:underline"><%= event.title %></a>
-                  </h2>                                                                                                                       
-                  <p class="text-sm text-blue-600 mt-1 capitalize"><%= event.category %></p>
-                </div>                                                                                                                                                                                          
-                <span class="text-sm text-gray-400">                                                                                                                                                            
-                  <%= event.startTime.toLocaleDateString() %>
-                </span>                                                                                                                                                                                         
-              </div>
-              <p class="text-gray-600 mt-3 text-sm"><%= event.description %></p>
-              <div class="mt-4 text-sm text-gray-500 flex gap-6">                                                                                                                                               
-                <span><%= event.location %></span>
-                <span><%= event.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>                                                                                                 
-                <% if (event.capacity) { %>                                                                                                                                                                     
-                  <span>Capacity: <%= event.capacity %></span>
-                <% } %>                                                                                                                                                                                         
-              </div>
-              <% if (session?.authenticatedUser?.role === 'user') { %>
-                <div class="mt-4 flex items-center gap-4">
-                  <button
-                    hx-post="/events/<%= event.id %>/rsvp"
-                    hx-target="#rsvp-feedback-<%= event.id %>"
-                    hx-swap="innerHTML"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-                  >
-                    RSVP
-                  </button>
-                  <div id="rsvp-feedback-<%= event.id %>"></div>
-                </div>
-              <% } %>
-            </div>                                                                                                                                                                                              
-          <% }) %>
-        </div>
-      <% } %>
-    </div>                                                                                                                                                                                                      
-   
-  </div>
+      <div class="flex-1">
+        <label for="timeframe" class="block text-sm font-medium text-gray-700 mb-1">
+          Timeframe
+        </label>
+        <select
+          id="timeframe"
+          name="timeframe"
+          hx-get="/events/results"
+          hx-target="#event-results"
+          hx-push-url="true"
+          hx-trigger="change"
+          hx-include="[name='search'],[name='category']"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all" <%= timeframe === "all" ? "selected" : "" %>>All Upcoming</option>
+          <option value="week" <%= timeframe === "week" ? "selected" : "" %>>This Week</option>
+          <option value="weekend" <%= timeframe === "weekend" ? "selected" : "" %>>This Weekend</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <button
+        type="submit"
+        class="bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition"
+      >
+        Search
+      </button>
+      
+        href="/events"
+        class="ml-3 text-sm text-gray-500 hover:text-gray-700 underline"
+      >
+        Clear filters
+      </a>
+    </div>
+  </form>
+
+  <%- include('_results', { events, session }) %>
+
+</div>
