@@ -1,0 +1,33 @@
+<div id="event-results">
+    <% if (events.length === 0) { %>
+      <div class="text-center text-gray-500 py-12">
+        <p class="text-lg">No events found.</p>
+        <p class="text-sm mt-1">Try adjusting your search or filters.</p>
+      </div>
+    <% } else { %>
+      <p class="text-sm text-gray-500 mb-4"><%= events.length %> event(s) found</p>
+      <div class="grid gap-4">
+        <% events.forEach(function(event) { %>
+          <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900"><%= event.title %></h2>
+                <p class="text-sm text-blue-600 mt-1 capitalize"><%= event.category %></p>
+              </div>
+              <span class="text-sm text-gray-400">
+                <%= event.startTime.toLocaleDateString() %>
+              </span>
+            </div>
+            <p class="text-gray-600 mt-3 text-sm"><%= event.description %></p>
+            <div class="mt-4 text-sm text-gray-500 flex gap-6">
+              <span><%= event.location %></span>
+              <span><%= event.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>
+              <% if (event.capacity) { %>
+                <span>Capacity: <%= event.capacity %></span>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>

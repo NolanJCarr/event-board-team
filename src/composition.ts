@@ -7,6 +7,7 @@ import { CreateApp } from "./app";
 import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
+import { CreateDashboardService } from "./event/DashboardService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
 import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
@@ -17,6 +18,14 @@ import type { Event as CRUDEvent } from "./events/Event";
 import { InMemoryEventRepository as FilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
+import { CreateAttendeeListController} from "./attendee/AttendeeListController";
+import { CreateAttendeeListService} from "./service/AttendeeListService"
+import { CreateEventCreationController } from "./events/EventCreationController";
+import { CreateEventEditingController } from "./events/EventEditingController";
+// CRUD EventService — used for event creation and editing (features 1 & 3)
+import { EventService } from "./events/EventService";
+// Shared event repository — single source of truth for all event data
+import type { IEventRepository as FilterRepoInterface } from "./repository/EventRepository";
 
 // ---------------------------------------------------------------------------
 // Demo seed events — gives the app real data to work with in the browser.
@@ -29,8 +38,8 @@ const DEMO_EVENTS: CRUDEvent[] = [
     title: "Tech Meetup Spring 2026",
     description: "Talks on web development, AI tools, and open source contribution. All skill levels welcome.",
     location: "Campus Center Room 101",
-    category: "tech",
-    startTime: new Date("2026-05-01T18:00:00"),
+    category: "technology",
+    startTime: new Date("2026-04-01T18:00:00"),
     endTime: new Date("2026-05-01T20:00:00"),
     capacity: 30,
     status: "published",
@@ -92,24 +101,45 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
-  // Event repository — CRUD (findById used by RSVP dashboard; create/update used by event features)
-  const crudEventRepository = new InMemoryEventRepository();
-  crudEventRepository.seed(DEMO_EVENTS);
+  // Shared event repository — single source of truth for ALL event operations
+  const sharedEventRepository = new InMemoryEventRepository();
+  sharedEventRepository.seed(DEMO_EVENTS);
 
   // RSVP wiring
   const rsvpRepository = CreateInMemoryRSVPRepository();
-  // Register capacity for each demo event so toggleRSVP knows the limit.
   for (const event of DEMO_EVENTS) {
     void rsvpRepository.setCapacity(event.id, event.capacity ?? 9999);
   }
-  const rsvpService = CreateRSVPService(rsvpRepository, crudEventRepository);
+  const rsvpService = CreateRSVPService(rsvpRepository, sharedEventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
-  // Event wiring — filter repo powers the search/category/timeframe feature
-  const filterEventRepository = new FilterEventRepository();
-  filterEventRepository.seed(DEMO_EVENTS);
-  const eventService = CreateEventService(filterEventRepository);
-  const eventController = CreateEventController(eventService, resolvedLogger);
+  // Dashboard wiring
+  const dashboardService = CreateDashboardService(sharedEventRepository, rsvpRepository);
 
-  return CreateApp(authController, rsvpController, eventController, resolvedLogger);
+  // Filter event repo delegates to the shared CRUD repo so search/filter sees the same data
+  const filterEventRepository = new FilterEventRepository();
+  filterEventRepository.seedFromCrudRepo(sharedEventRepository);
+
+  // Event services
+  const crudEventService = new EventService(sharedEventRepository);
+  const filterEventService = CreateEventService(filterEventRepository);
+
+  // Controllers
+  const eventController = CreateEventController(filterEventService, resolvedLogger);
+  const eventCreationController = CreateEventCreationController(crudEventService, resolvedLogger);
+  const eventEditingController = CreateEventEditingController(crudEventService, resolvedLogger);
+  const attendeeListService = CreateAttendeeListService(sharedEventRepository, rsvpRepository, authUsers);
+  const attendeeListController = CreateAttendeeListController(attendeeListService, resolvedLogger);
+
+  return CreateApp(
+    authController,
+    rsvpController,
+    eventController,
+    attendeeListController,
+    eventCreationController,
+    eventEditingController,
+    resolvedLogger,
+    crudEventService,
+    dashboardService,
+  );
 }

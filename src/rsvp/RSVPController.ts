@@ -32,7 +32,6 @@ class RSVPController implements IRSVPController {
       });
       return;
     }
-
     const eventId = typeof req.params.eventId === "string" ? req.params.eventId : "";
     if (!eventId) {
       res.status(400).render("partials/error", {
@@ -41,25 +40,23 @@ class RSVPController implements IRSVPController {
       });
       return;
     }
-
-    const actor = {
+    const person = {
       userId: currentUser.userId,
       role: currentUser.role as UserRole,
     };
 
-    const result = await this.rsvpService.toggleRSVP(actor, eventId);
-
+    const result = await this.rsvpService.toggleRSVP(person, eventId);
+    
     if (result.ok === false) {
       const status = this.mapErrorStatus(result.value);
-      this.logger.warn(`RSVP toggle failed for user ${actor.userId}: ${result.value.message}`);
+      this.logger.warn(`RSVP toggle failed for user ${person.userId}: ${result.value.message}`);
       res.status(status).render("partials/error", {
         message: result.value.message,
         layout: false,
       });
       return;
     }
-
-    this.logger.info(`User ${actor.userId} toggled RSVP on event ${eventId}: ${result.value}`);
+    this.logger.info(`User ${person.userId} toggled RSVP on event ${eventId}: ${result.value}`);
     // Sprint 2: return an HTMX partial instead of redirecting.
     res.redirect(`/events/${eventId}`);
   }
