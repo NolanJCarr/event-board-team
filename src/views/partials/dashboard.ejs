@@ -16,16 +16,7 @@
     <% } else { %>
       <ul class="space-y-3">
         <% events.forEach(function(event) { %>
-          <li class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-between gap-4">
-            <div class="min-w-0">
-              <a href="/events/<%= event.id %>" class="text-slate-900 font-semibold hover:text-blue-700 no-underline truncate block"><%= event.title %></a>
-              <span class="text-slate-500 text-xs"><%= event.startTime.toLocaleDateString() %></span>
-            </div>
-            <div class="flex items-center gap-3 shrink-0">
-              <span class="text-slate-600 text-sm"><%= event.attendeeCount %> going</span>
-              <span class="inline-block px-2.5 py-1 text-xs font-medium rounded-full <%= statusBadge(event.status) %>"><%= event.status.charAt(0).toUpperCase() + event.status.slice(1) %></span>
-            </div>
-          </li>
+          <%- include("dashboard-row", { event: event }) %>
         <% }); %>
       </ul>
     <% } %>

@@ -150,6 +150,24 @@ export class EventService implements IEventService {
       );
     }
 
+    // Status-transition guards (Feature 5).
+    // Publish: only a draft event may be published.
+    if (input.updates.status === "published" && event.status !== "draft") {
+      return Err(
+        InvalidStateError(
+          `Cannot publish an event that is already ${event.status}`
+        )
+      );
+    }
+    // Cancel: only a published event may be cancelled; cancelled is terminal (guarded above).
+    if (input.updates.status === "cancelled" && event.status !== "published") {
+      return Err(
+        InvalidStateError(
+          `Only a published event can be cancelled (current status: ${event.status})`
+        )
+      );
+    }
+
     // Validate updates if they exist
     const updates = input.updates;
 

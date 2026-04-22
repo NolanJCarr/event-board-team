@@ -127,7 +127,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // Controllers
   const eventController = CreateEventController(filterEventService, resolvedLogger);
   const eventCreationController = CreateEventCreationController(crudEventService, resolvedLogger);
-  const eventEditingController = CreateEventEditingController(crudEventService, resolvedLogger);
+  const eventEditingController = CreateEventEditingController(crudEventService, resolvedLogger, dashboardService);
   const attendeeListService = CreateAttendeeListService(sharedEventRepository, rsvpRepository, authUsers);
   const attendeeListController = CreateAttendeeListController(attendeeListService, resolvedLogger);
 
