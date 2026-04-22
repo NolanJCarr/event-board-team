@@ -21,12 +21,14 @@ export interface IRSVPRepository {
   findAllByUser(userId: string): Promise<Result<RSVPRecord[], RSVPError>>;
   saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>>;
   countAttendees(eventId: string): Promise<Result<number, RSVPError>>;
+  updateStatus(userId: string, eventId: string,status: RSVPStatus,): Promise<Result<RSVPRecord | null, RSVPError>>;
   findAllByEvent(eventId:string):Promise<Result<RSVPRecord[],RSVPError>>;
-  listByEvent(eventId:string):Promise<Result<RSVPRecord[],RSVPError>>;
 
   // ── Waitlist (ordered by insertion time) ─────────────────────────────────────
   addToWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>>;
   removeFromWaitlist(userId: string, eventId: string): Promise<Result<void, RSVPError>>;
   /** Removes and returns the first userId on the waitlist, or null if empty. */
   shiftWaitlist(eventId: string): Promise<Result<string | null, RSVPError>>;
+  getWaitlistPosition(userId: string, eventId: string,): Promise<Result<number | null, RSVPError>>;
+  
 }
