@@ -1,0 +1,30 @@
+<div id="rsvp-button">
+  <% if (rsvpStatus === "going") { %>
+    <button
+      hx-post="/events/<%= eventId %>/rsvp"
+      hx-target="#rsvp-button"
+      hx-swap="outerHTML"
+      class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700"
+    >
+      Going — Cancel RSVP
+    </button>
+  <% } else if (rsvpStatus === "waitlisted") { %>
+    <button
+      hx-post="/events/<%= eventId %>/rsvp"
+      hx-target="#rsvp-button"
+      hx-swap="outerHTML"
+      class="px-4 py-2 bg-yellow-500 text-white text-sm font-medium rounded-lg hover:bg-yellow-600"
+    >
+      Waitlisted — Cancel
+    </button>
+  <% } else { %>
+    <button
+      hx-post="/events/<%= eventId %>/rsvp"
+      hx-target="#rsvp-button"
+      hx-swap="outerHTML"
+      class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+    >
+      RSVP
+    </button>
+  <% } %>
+</div>
