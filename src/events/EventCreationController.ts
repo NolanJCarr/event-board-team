@@ -36,11 +36,11 @@ class EventCreationController implements IEventCreationController {
       return;
     }
 
-    const { title, description, location, category, startDate, startTime, endDate, endTime, capacity } = req.body;
+    const { title, description, location, category, startTime, endTime, capacity } = req.body;
 
-    // Parse dates
-    const startDateTime = new Date(`${startDate}T${startTime}`);
-    const endDateTime = new Date(`${endDate}T${endTime}`);
+    // Parse datetime-local inputs to Date objects
+    const startDateTime = new Date(startTime);
+    const endDateTime = new Date(endTime);
 
     // Parse capacity (optional)
     const parsedCapacity = capacity ? Number.parseInt(capacity, 10) : undefined;
