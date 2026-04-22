@@ -2,12 +2,22 @@ import type { Request, Response } from "express";
 import type { EventService } from "./EventService";
 import type { Event } from "./Event";
 import type { ILoggingService } from "../service/LoggingService";
+import type { IDashboardService } from "../event/DashboardService";
 import { touchAppSession, type AppSessionStore } from "../session/AppSession";
 
 export interface IEventEditingController {
   showEditForm(req: Request, res: Response, store: AppSessionStore): Promise<void>;
   updateEvent(req: Request, res: Response, store: AppSessionStore): Promise<void>;
   cancelEvent(req: Request, res: Response, store: AppSessionStore): Promise<void>;
+  publishEvent(req: Request, res: Response, store: AppSessionStore): Promise<void>;
+}
+
+// Dashboard rows set hx-target to "event-row-<eventId>" so we can detect
+// that a status-transition request originated from the dashboard and render
+// an inline row fragment instead of the full event-detail partial.
+function isDashboardRowRequest(req: Request): boolean {
+  const target = req.get("HX-Target");
+  return typeof target === "string" && target.startsWith("event-row-");
 }
 
 function formatDateTimeLocal(date: Date): string {
@@ -23,7 +33,40 @@ class EventEditingController implements IEventEditingController {
   constructor(
     private readonly eventService: EventService,
     private readonly logger: ILoggingService,
+    private readonly dashboardService: IDashboardService,
   ) {}
+
+  private async renderTransitionSuccess(
+    req: Request,
+    res: Response,
+    session: ReturnType<typeof touchAppSession>,
+    updated: Event,
+  ): Promise<void> {
+    if (req.get("HX-Request") === "true") {
+      if (isDashboardRowRequest(req)) {
+        const rowResult = await this.dashboardService.getEventRow(updated.id);
+        if (rowResult.ok === false) {
+          res.status(500).render("partials/error", {
+            message: rowResult.value.message,
+            layout: false,
+          });
+          return;
+        }
+        res.render("partials/dashboard-row", {
+          event: rowResult.value,
+          layout: false,
+        });
+        return;
+      }
+      res.render("event/partials/event-detail", {
+        event: updated,
+        session,
+        layout: false,
+      });
+      return;
+    }
+    res.redirect(`/events/${updated.id}`);
+  }
 
   async showEditForm(req: Request, res: Response, store: AppSessionStore): Promise<void> {
     const session = touchAppSession(store);
@@ -170,6 +213,20 @@ class EventEditingController implements IEventEditingController {
   }
 
   async cancelEvent(req: Request, res: Response, store: AppSessionStore): Promise<void> {
+    await this.transitionStatus(req, res, store, "cancelled", "cancel");
+  }
+
+  async publishEvent(req: Request, res: Response, store: AppSessionStore): Promise<void> {
+    await this.transitionStatus(req, res, store, "published", "publish");
+  }
+
+  private async transitionStatus(
+    req: Request,
+    res: Response,
+    store: AppSessionStore,
+    target: "published" | "cancelled",
+    verb: string,
+  ): Promise<void> {
     const session = touchAppSession(store);
     const userId = session.authenticatedUser?.userId;
     const role = session.authenticatedUser?.role;
@@ -177,7 +234,7 @@ class EventEditingController implements IEventEditingController {
 
     if (!userId || !role) {
       res.status(401).render("partials/error", {
-        message: "You must be logged in to cancel events.",
+        message: `You must be logged in to ${verb} events.`,
         layout: false,
       });
       return;
@@ -185,13 +242,13 @@ class EventEditingController implements IEventEditingController {
 
     const result = await this.eventService.updateEvent({
       eventId,
-      updates: { status: "cancelled" },
+      updates: { status: target },
       userId,
       role,
     });
 
     if (result.ok === false) {
-      this.logger.warn(`cancelEvent failed: ${result.value.message}`);
+      this.logger.warn(`${verb}Event failed: ${result.value.message}`);
       let statusCode = 400;
       if (result.value.name === "EventNotFoundError") statusCode = 404;
       else if (result.value.name === "UnauthorizedError") statusCode = 403;
@@ -204,22 +261,15 @@ class EventEditingController implements IEventEditingController {
       return;
     }
 
-    this.logger.info(`Event cancelled: ${result.value.id}`);
-
-    if (req.get("HX-Request") === "true") {
-      return void res.render("event/partials/event-detail", {
-        event: result.value,
-        session,
-        layout: false,
-      });
-    }
-    res.redirect(`/events/${result.value.id}`);
+    this.logger.info(`Event ${target}: ${result.value.id}`);
+    await this.renderTransitionSuccess(req, res, session, result.value);
   }
 }
 
 export function CreateEventEditingController(
   eventService: EventService,
   logger: ILoggingService,
+  dashboardService: IDashboardService,
 ): IEventEditingController {
-  return new EventEditingController(eventService, logger);
+  return new EventEditingController(eventService, logger, dashboardService);
 }
