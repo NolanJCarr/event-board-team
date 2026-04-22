@@ -253,6 +253,35 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── Events routes ────────────────────────────────────────────────
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        // A user must be logged in to see the events.
+        // It is handed to the event controller for the rest.
+        await this.eventController.showEvents(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/results",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.eventController.showEventsPartial(req, res, sessionStore(req));
+  }),
+);
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
+      }),
+    );
+
     this.app.get(
       "/events/:id",
       asyncHandler(async (req, res) => {
@@ -297,35 +326,6 @@ class ExpressApp implements IApp {
           event: result.value,
           pageError: null,
         });
-      }),
-    );
-
-    // ── Events routes ────────────────────────────────────────────────
-
-    this.app.get(
-      "/events",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-        // A user must be logged in to see the events.
-        // It is handed to the event controller for the rest.
-        await this.eventController.showEvents(req, res, sessionStore(req));
-      }),
-    );
-    
-    this.app.get(
-      "/events/results",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-        await this.eventController.showEventsPartial(req, res, sessionStore(req));
-  }),
-);
-    this.app.get(
-      "/events/new",
-      asyncHandler(async (req, res) => {
-        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
-          return;
-        }
-        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
       }),
     );
 
