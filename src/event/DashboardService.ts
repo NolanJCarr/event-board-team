@@ -1,5 +1,5 @@
-import { Event, IEventWithCounts } from "../events/Event";
-import { EventError, UnauthorizedError } from "../events/errors";
+import { IEventWithCounts } from "../events/Event";
+import { EventError, EventNotFoundError, UnauthorizedError } from "../events/errors";
 import { IEventRepository } from "../events/EventRepository";
 import { IRSVPRepository } from "../repository/RSVPRepository";
 import { Result, Ok, Err } from "../lib/result";
@@ -15,6 +15,7 @@ export interface IDashboardService {
     userId: string;
     role: string;
   }): Promise<Result<DashboardOutput, EventError>>;
+  getEventRow(eventId: string): Promise<Result<IEventWithCounts, EventError>>;
 }
 
 export function CreateDashboardService(
@@ -27,7 +28,14 @@ export function CreateDashboardService(
         return Err(UnauthorizedError("Authentication required to view dashboard."));
       }
 
-      const events = await eventRepo.findByOrganizerId(userId);
+      if (role !== "admin" && role !== "staff") {
+        return Err(UnauthorizedError("Only organizers can view the dashboard."));
+      }
+
+      const events =
+        role === "admin"
+          ? await eventRepo.findAll()
+          : await eventRepo.findByOrganizerId(userId);
 
       const withCounts: IEventWithCounts[] = await Promise.all(
         events.map(async (event) => {
@@ -44,6 +52,16 @@ export function CreateDashboardService(
       );
 
       return Ok({ draft, published, pastOrCancelled });
+    },
+
+    async getEventRow(eventId) {
+      const event = await eventRepo.findById(eventId);
+      if (!event) {
+        return Err(EventNotFoundError(`Event with id "${eventId}" not found`));
+      }
+      const countResult = await rsvpRepo.countAttendees(event.id);
+      const attendeeCount = countResult.ok ? countResult.value : 0;
+      return Ok({ ...event, attendeeCount });
     },
   };
 }

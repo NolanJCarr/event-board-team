@@ -369,6 +369,16 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.post(
+      "/events/:id/publish",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can publish events.")) {
+          return;
+        }
+        await this.eventEditingController.publishEvent(req, res, sessionStore(req));
+      }),
+    );
+
     this.app.get(
       "/events/:eventId/attendees",
       asyncHandler(async (req, res) => {
