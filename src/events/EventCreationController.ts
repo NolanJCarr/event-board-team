@@ -58,15 +58,38 @@ class EventCreationController implements IEventCreationController {
 
     if (result.ok === false) {
       this.logger.warn(`createEvent failed: ${result.value.message}`);
-      res.status(400).render("events/new", {
+
+      let statusCode = 400;
+      if (result.value.name === "UnauthorizedError") statusCode = 403;
+
+      const errorData = {
         session,
         pageError: result.value.message,
         formData: req.body,
-      });
+      };
+
+      // HTMX request: return partial form with error
+      if (req.get("HX-Request") === "true") {
+        return void res.status(statusCode).render("events/partials/create-form", { ...errorData, layout: false });
+      }
+
+      // Regular request: return full page
+      res.status(statusCode).render("events/new", errorData);
       return;
     }
 
     this.logger.info(`Event created successfully: ${result.value.id}`);
+
+    // HTMX request: return success partial
+    if (req.get("HX-Request") === "true") {
+      return void res.render("events/partials/create-success", {
+        event: result.value,
+        session,
+        layout: false,
+      });
+    }
+
+    // Regular request: redirect to events list
     res.redirect("/events");
   }
 }
