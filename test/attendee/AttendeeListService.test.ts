@@ -70,8 +70,8 @@ test("groups attendees by status", async() => {
         ])
     );
 
-    mockUserRepo.findById.mockImplementation(({id}) =>
-        Ok({id, displayName: id})
+    mockUserRepo.findById.mockImplementation((id: string) =>
+        Promise.resolve(Ok({ id, displayName: id }))
     );
 
     const result = await service.getAttendeeList("event1",{
@@ -104,8 +104,8 @@ test("sorts attendees by RSVP time ascending", async () => {
     ])
   );
 
-  mockUserRepo.findById.mockImplementation(({ id }) =>
-    Ok({ id, displayName: id })
+  mockUserRepo.findById.mockImplementation(( id: string ) =>
+    Promise.resolve(Ok({ id, displayName: id }))
   );
 
   const result = await service.getAttendeeList("event1", {
