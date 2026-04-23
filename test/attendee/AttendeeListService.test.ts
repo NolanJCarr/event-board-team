@@ -3,7 +3,7 @@ import {Ok} from "../../src/lib/result";
 
 const mockEventRepo = {findById: jest.fn()};
 
-const mockRSVPRepo = {listByEvent: jest.fn()};
+const mockRSVPRepo = {findAllByEvent: jest.fn()};
 
 const mockUserRepo = {findById: jest.fn()};
 
@@ -20,7 +20,7 @@ test("returns attendee list for organizer", async() => {
         id: "event1",
         organizerId: "user1",
     });
-    mockRSVPRepo.listByEvent.mockResolvedValue(
+    mockRSVPRepo.findAllByEvent.mockResolvedValue(
         Ok([
             {userId:"u1", status: "going", createdAt: new Date("2024-03-05")}
         ])
@@ -62,7 +62,7 @@ test("groups attendees by status", async() => {
         organizerId: "user1",
     });
 
-    mockRSVPRepo.listByEvent.mockResolvedValue(
+    mockRSVPRepo.findAllByEvent.mockResolvedValue(
         Ok([
             { userId: "u1", status: "going", createdAt: new Date() },
             { userId: "u2", status: "waitlisted", createdAt: new Date() },
@@ -97,7 +97,7 @@ test("sorts attendees by RSVP time ascending", async () => {
     organizerId: "user1",
   });
 
-  mockRSVPRepo.listByEvent.mockResolvedValue(
+  mockRSVPRepo.findAllByEvent.mockResolvedValue(
     Ok([
       { userId: "u1", status: "going", createdAt: new Date("2024-05-05") },
       { userId: "u2", status: "going", createdAt: new Date("2024-04-01") },
