@@ -68,6 +68,11 @@ export class InMemoryEventRepository implements IEventRepository {
     results.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
     return Ok(results);
   }
+
+  async findById(eventId: string): Promise<Result<Event | null, EventError>> {
+    const allEvents = this.crudRepo ? this.crudRepo.getAllEvents() : Array.from(this.events.values());
+    return Ok(allEvents.find(e => e.id === eventId) ?? null);
+  }
 }
 
 export function CreateInMemoryEventRepository(): IEventRepository {

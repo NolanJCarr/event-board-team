@@ -1,0 +1,7 @@
+<% if (rsvpStatus === "going") { %>
+  <span class="text-sm font-medium text-green-600">You're going!</span>
+<% } else if (rsvpStatus === "waitlisted") { %>
+  <span class="text-sm font-medium text-yellow-600">You've been waitlisted.</span>
+<% } else { %>
+  <span class="text-sm font-medium text-gray-500">RSVP cancelled.</span>
+<% } %>

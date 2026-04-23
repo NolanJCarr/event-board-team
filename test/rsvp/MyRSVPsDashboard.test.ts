@@ -100,10 +100,9 @@ describe("RSVPService.getMyRSVPs", () => {
     const pastEvent = makeEvent({ id: "evt-past", startTime: PAST });
     eventRepo.seed([pastEvent]);
 
-    const service = CreateRSVPService(rsvpRepo, eventRepo);
-    await service.registerEvent("evt-past", 10);
-    await service.toggleRSVP(MEMBER, "evt-past");
+    await rsvpRepo.saveRSVP({ id: "rsvp-past-1", userId: MEMBER.userId, eventId: "evt-past", status: "going", createdAt: new Date() });
 
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
     const result = await service.getMyRSVPs(MEMBER, NOW);
 
     expect(result.ok).toBe(true);
@@ -164,11 +163,10 @@ describe("RSVPService.getMyRSVPs", () => {
     const recent = makeEvent({ id: "evt-recent", startTime: new Date("2026-03-15T10:00:00Z") });
     eventRepo.seed([older, recent]);
 
+    await rsvpRepo.saveRSVP({ id: "rsvp-older-1", userId: MEMBER.userId, eventId: "evt-older", status: "going", createdAt: new Date() });
+    await rsvpRepo.saveRSVP({ id: "rsvp-recent-1", userId: MEMBER.userId, eventId: "evt-recent", status: "going", createdAt: new Date() });
+
     const service = CreateRSVPService(rsvpRepo, eventRepo);
-    await service.registerEvent("evt-older", 10);
-    await service.registerEvent("evt-recent", 10);
-    await service.toggleRSVP(MEMBER, "evt-older");
-    await service.toggleRSVP(MEMBER, "evt-recent");
 
     const result = await service.getMyRSVPs(MEMBER, NOW);
 

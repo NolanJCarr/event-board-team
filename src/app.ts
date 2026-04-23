@@ -253,6 +253,35 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── Events routes ────────────────────────────────────────────────
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        // A user must be logged in to see the events.
+        // It is handed to the event controller for the rest.
+        await this.eventController.showEvents(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.get(
+      "/events/results",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.eventController.showEventsPartial(req, res, sessionStore(req));
+  }),
+);
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
+          return;
+        }
+        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
+      }),
+    );
+
     this.app.get(
       "/events/:id",
       asyncHandler(async (req, res) => {
@@ -284,33 +313,19 @@ class ExpressApp implements IApp {
           return;
         }
 
+        if (this.isHtmxRequest(req)) {
+          return res.render("event/partials/event-detail", {
+            event: result.value,
+            session: browserSession,
+            layout: false,
+          });
+        }
+
         res.render("event/detail", {
           session: browserSession,
           event: result.value,
           pageError: null,
         });
-      }),
-    );
-
-    // ── Events routes ────────────────────────────────────────────────
-
-    this.app.get(
-      "/events",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-        // A user must be logged in to see the events.
-        // It is handed to the event controller for the rest.
-        await this.eventController.showEvents(req, res, sessionStore(req));
-      }),
-    );
-
-    this.app.get(
-      "/events/new",
-      asyncHandler(async (req, res) => {
-        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can create events.")) {
-          return;
-        }
-        await this.eventCreationController.showCreateForm(req, res, sessionStore(req));
       }),
     );
 
@@ -341,6 +356,26 @@ class ExpressApp implements IApp {
           return;
         }
         await this.eventEditingController.updateEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id/cancel",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can cancel events.")) {
+          return;
+        }
+        await this.eventEditingController.cancelEvent(req, res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id/publish",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers can publish events.")) {
+          return;
+        }
+        await this.eventEditingController.publishEvent(req, res, sessionStore(req));
       }),
     );
 

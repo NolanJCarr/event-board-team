@@ -17,8 +17,12 @@ export interface Event{
 export type EventError =
 | { name: "EventNotFoundError"; message: string }
 | { name: "InvalidInputError"; message: string }
+// The next 3 errors below were added during Spring 2. These erros make it so the app returns a clear error describing what went wrong.
+// Although the category is a dropdown, the user could bypass this and type directly into the url. This is what this InvalidCategoryError is for.
 | { name: "InvalidCategoryError"; message: string }
+// Although the time frame is a dropdown, the user could bypass this and type directly into the url. This is what this InvalidTimeframeError is for.
 | { name: "InvalidTimeframeError"; message: string }
+// This is returned when the search query is too long or if it only contains whitespace.
 | { name: "InvalidSearchError"; message: string }
 | { name: "UnauthorizedError"; message: string }
 | { name: "InvalidStateError"; message: string }
@@ -42,7 +46,7 @@ export const InvalidStateError = (message: string): EventError => ({
     name: "InvalidStateError",
     message,
 })
-
+// I added the next three errors in Sprint 2, as described above. 
 export const InvalidCategoryError = (message: string): EventError => ({
     name: "InvalidCategoryError",
     message,
@@ -68,5 +72,6 @@ export interface GetEventsFilter {
 // This says that any repository built must have a getEvents function.
 export interface IEventRepository {
     getEvents(filter: GetEventsFilter): Promise<Result<Event[], EventError>>;
+    findById(eventId: string): Promise<Result<Event | null, EventError>>;
 }
 
