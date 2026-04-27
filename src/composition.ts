@@ -13,7 +13,6 @@ import { CreateRSVPController } from "./rsvp/RSVPController";
 import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
 // Prisma setup
 import { PrismaClient } from "@prisma/client";
-import Database from "better-sqlite3";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaEventRepository } from "./repository/PrismaEventRepository";
 import type { Event as CRUDEvent } from "./events/Event";
@@ -105,11 +104,9 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
   // Prisma client initialization with better-sqlite3 adapter
-  const dbPath = process.env.DATABASE_URL
-    ? process.env.DATABASE_URL.replace("file:", "")
-    : "./prisma/dev.db";
-  const db = new Database(dbPath);
-  const adapter = new PrismaBetterSqlite3(db);
+  const adapter = new PrismaBetterSqlite3({
+    url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+  });
   const prisma = new PrismaClient({ adapter });
 
   // Shared event repository — now using Prisma for persistence
