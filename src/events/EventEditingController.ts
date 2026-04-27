@@ -20,13 +20,29 @@ function isDashboardRowRequest(req: Request): boolean {
   return typeof target === "string" && target.startsWith("event-row-");
 }
 
-function formatDateTimeLocal(date: Date): string {
+function formatDateTimeLocal(date: Date | undefined | null): string {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return "";
+  }
+
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function isValidDate(date: Date | undefined | null): boolean {
+  return date instanceof Date && !Number.isNaN(date.getTime());
+}
+
+function getInvalidDateMessage(event: Event): string | null {
+  if (isValidDate(event.startTime) && isValidDate(event.endTime)) {
+    return null;
+  }
+
+  return "This event has invalid date data. Please enter valid start and end times before saving.";
 }
 
 class EventEditingController implements IEventEditingController {
@@ -120,7 +136,7 @@ class EventEditingController implements IEventEditingController {
       event: eventResult,
       startTimeFormatted: formatDateTimeLocal(eventResult.startTime),
       endTimeFormatted: formatDateTimeLocal(eventResult.endTime),
-      pageError: null,
+      pageError: getInvalidDateMessage(eventResult),
     };
 
     if (req.get("HX-Request") === "true") {
@@ -190,7 +206,7 @@ class EventEditingController implements IEventEditingController {
         event: eventResult,
         startTimeFormatted: formatDateTimeLocal(eventResult.startTime),
         endTimeFormatted: formatDateTimeLocal(eventResult.endTime),
-        pageError: result.value.message,
+        pageError: result.value.message ?? getInvalidDateMessage(eventResult),
       };
 
       if (req.get("HX-Request") === "true") {
