@@ -30,6 +30,7 @@ model Event{
   status String @default("draft")
   organizerId String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   rsvps RSVP[]
 }
