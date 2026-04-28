@@ -6,12 +6,21 @@ import type { IRSVPRepository, RSVPRecord, RSVPStatus } from "./RSVPRepository";
 class PrismaRSVPRepository implements IRSVPRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  // Capacity lives on the Event row — setCapacity is a no-op kept for interface compatibility.
   async setCapacity(_eventId: string, _capacity: number): Promise<Result<void, RSVPError>> {
-    return Err(UnexpectedDependencyError("setCapacity not implemented"));
+    return Ok(undefined);
   }
 
-  async getCapacity(_eventId: string): Promise<Result<number | null, RSVPError>> {
-    return Err(UnexpectedDependencyError("getCapacity not implemented"));
+  async getCapacity(eventId: string): Promise<Result<number | null, RSVPError>> {
+    try {
+      const event = await this.prisma.event.findUnique({
+        where: { id: eventId },
+        select: { capacity: true },
+      });
+      return Ok(event?.capacity ?? null);
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to read event capacity."));
+    }
   }
 
   async findRSVP(userId: string, eventId: string): Promise<Result<RSVPRecord | null, RSVPError>> {
@@ -97,20 +106,44 @@ class PrismaRSVPRepository implements IRSVPRepository {
     }
   }
 
+  // Waitlist membership is the set of RSVP rows with status="waitlisted", ordered by createdAt.
+  // saveRSVP with that status puts a user on the waitlist; saveRSVP with another status removes them.
+  // These methods stay no-ops to honor the interface; ordering/promotion is handled below.
   async addToWaitlist(_userId: string, _eventId: string): Promise<Result<void, RSVPError>> {
-    return Err(UnexpectedDependencyError("addToWaitlist not implemented"));
+    return Ok(undefined);
   }
 
   async removeFromWaitlist(_userId: string, _eventId: string): Promise<Result<void, RSVPError>> {
-    return Err(UnexpectedDependencyError("removeFromWaitlist not implemented"));
+    return Ok(undefined);
   }
 
-  async shiftWaitlist(_eventId: string): Promise<Result<string | null, RSVPError>> {
-    return Err(UnexpectedDependencyError("shiftWaitlist not implemented"));
+  async shiftWaitlist(eventId: string): Promise<Result<string | null, RSVPError>> {
+    try {
+      const next = await this.prisma.rSVP.findFirst({
+        where: { eventId, status: "waitlisted" },
+        orderBy: { createdAt: "asc" },
+        select: { userId: true },
+      });
+      return Ok(next?.userId ?? null);
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to shift waitlist."));
+    }
   }
 
-  async getWaitlistPosition(_userId: string, _eventId: string): Promise<Result<number | null, RSVPError>> {
-    return Err(UnexpectedDependencyError("getWaitlistPosition not implemented"));
+  async getWaitlistPosition(userId: string, eventId: string): Promise<Result<number | null, RSVPError>> {
+    try {
+      const own = await this.prisma.rSVP.findFirst({
+        where: { userId, eventId, status: "waitlisted" },
+        select: { createdAt: true },
+      });
+      if (!own) return Ok(null);
+      const earlier = await this.prisma.rSVP.count({
+        where: { eventId, status: "waitlisted", createdAt: { lt: own.createdAt } },
+      });
+      return Ok(earlier + 1);
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to compute waitlist position."));
+    }
   }
 
   private toDomain(row: { id: string; userId: string; eventId: string; status: string; createdAt: Date | string }): RSVPRecord {
