@@ -44,3 +44,11 @@ model RSVP{
 
   event Event @relation(fields: [eventId], references: [id])
 }
+
+model User {
+  id String @id
+  email String
+  displayName String
+
+  rsvps RSVP[]
+}
