@@ -1,6 +1,6 @@
 import { type Result, Ok, Err } from "../lib/result";
 import {UnauthorizedError, EventNotFoundError, InvalidStateError, UnexpectedDependencyError, type RSVPError} from "../rsvp/errors";
-import type { IRSVPRepository, RSVPRecord } from "../repository/RSVPRepository";
+import type { IRSVPRepository, RSVPRecord, RSVPWithEventData } from "../repository/RSVPRepository";
 import type { IEventRepository, Event } from "../events/EventRepository";
 import type { UserRole } from "../auth/User";
 
@@ -188,17 +188,18 @@ class RSVPService implements IRSVPService {
       return Err(UnauthorizedError("Only members can view their RSVP dashboard."));
     }
 
-    const recordsResult = await this.repository.findAllByUser(actor.userId);
-    if (recordsResult.ok === false) {
-      return Err(UnexpectedDependencyError(recordsResult.value.message));
+    const joinResult = await this.repository.findAllByUserWithEventData(actor.userId);
+    if (joinResult.ok === false) {
+      return Err(UnexpectedDependencyError(joinResult.value.message));
     }
 
     const upcoming: RSVPWithEvent[] = [];
     const pastAndCancelled: RSVPWithEvent[] = [];
 
-    for (const rsvp of recordsResult.value) {
-      const event = await this.eventRepository.findById(rsvp.eventId);
-      // Skip RSVPs whose event no longer exists (data consistency guard)
+    for (const { rsvp, event: preloaded } of joinResult.value) {
+      // Prisma: event is preloaded in the same query via include (single join).
+      // In-memory: preloaded is null, falls back to a separate findById lookup.
+      const event = preloaded ?? await this.eventRepository.findById(rsvp.eventId);
       if (!event) continue;
 
       const isActiveStatus = rsvp.status === "going" || rsvp.status === "waitlisted";
