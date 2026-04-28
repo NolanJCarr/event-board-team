@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 import { Ok, Err, type Result } from "../lib/result";
 import { UnexpectedDependencyError, type RSVPError } from "../rsvp/errors";
-import type { IRSVPRepository, RSVPRecord, RSVPStatus } from "./RSVPRepository";
+import type { IRSVPRepository, RSVPRecord, RSVPStatus, RSVPWithEventData } from "./RSVPRepository";
+import type { Event } from "../events/Event";
 
 class PrismaRSVPRepository implements IRSVPRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -38,6 +39,21 @@ class PrismaRSVPRepository implements IRSVPRepository {
       return Ok(rows.map((r) => this.toDomain(r)));
     } catch {
       return Err(UnexpectedDependencyError("Failed to fetch RSVPs for user."));
+    }
+  }
+
+  async findAllByUserWithEventData(userId: string): Promise<Result<RSVPWithEventData[], RSVPError>> {
+    try {
+      const rows = await this.prisma.rSVP.findMany({
+        where: { userId },
+        include: { event: true },
+      });
+      return Ok(rows.map((r) => ({
+        rsvp: this.toDomain(r),
+        event: r.event ? this.eventToDomain(r.event) : null,
+      })));
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to load RSVPs with event data."));
     }
   }
 
@@ -179,6 +195,23 @@ class PrismaRSVPRepository implements IRSVPRepository {
     } catch{
       return Err(UnexpectedDependencyError("Failed to cancel and promote."));
     }
+  }
+
+  private eventToDomain(e: any): Event {
+    return {
+      id: e.id,
+      title: e.title,
+      description: e.description,
+      location: e.location,
+      category: e.category,
+      startTime: new Date(e.startTime),
+      endTime: new Date(e.endTime),
+      capacity: e.capacity ?? undefined,
+      status: e.status,
+      organizerId: e.organizerId,
+      createdAt: new Date(e.createdAt),
+      updatedAt: new Date(e.updatedAt),
+    };
   }
 
   private toDomain(row: { id: string; userId: string; eventId: string; status: string; createdAt: Date | string }): RSVPRecord {
