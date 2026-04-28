@@ -145,6 +145,41 @@ class PrismaRSVPRepository implements IRSVPRepository {
       return Err(UnexpectedDependencyError("Failed to compute waitlist position."));
     }
   }
+  
+  async cancelAndPromote(
+    userId:string,
+    eventId: string
+  ): Promise<Result<{ promotedUserId: string|null}, RSVPError>> {
+    try{
+      const result = await this.prisma.$transaction(async (tx)=> {
+        const existing = await tx.rSVP.findFirst({
+          where: {userId, eventId, status: "going"},
+        });
+        if (!existing){
+          return { promotedUserId: null};
+        }
+        await tx.rSVP.update({
+          where: {id:existing.id},
+          data: {status: "cancelled"},
+        });
+        const next = await tx.rSVP.findFirst({
+          where: { eventId, status: "waitlisted"},
+          orderBy: { createdAt: "asc"},
+        });
+        if (next){
+          await tx.rSVP.update({
+            where: { id: next.id},
+            data: {status: "going"},
+          });
+          return { promotedUserId: next.userId};
+        }
+        return { promotedUserId: null};
+      });
+      return Ok(result);
+    } catch{
+      return Err(UnexpectedDependencyError("Failed to cancel and promote."));
+    }
+  }
 
   private toDomain(row: { id: string; userId: string; eventId: string; status: string; createdAt: Date | string }): RSVPRecord {
     return {
