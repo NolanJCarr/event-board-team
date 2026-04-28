@@ -50,7 +50,9 @@ class RSVPController implements IRSVPController {
     if (result.ok === false) {
       const status = this.mapErrorStatus(result.value);
       this.logger.warn(`RSVP toggle failed for user ${person.userId}: ${result.value.message}`);
-      res.status(status).render("partials/error", {
+      // HTMX only swaps on 2xx — return 200 with the error partial so the message appears inline
+      const responseStatus = req.get("HX-Request") === "true" ? 200 : status;
+      res.status(responseStatus).render("partials/error", {
         message: result.value.message,
         layout: false,
       });
