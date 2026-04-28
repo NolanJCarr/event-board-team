@@ -112,6 +112,29 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // Shared event repository — now using Prisma for persistence
   const sharedEventRepository = new PrismaEventRepository(prisma);
 
+  // Seed demo events into Prisma so detail pages resolve for known IDs.
+  // Upsert is idempotent — safe to run on every startup.
+  void Promise.all(
+    DEMO_EVENTS.map((e) =>
+      prisma.event.upsert({
+        where: { id: e.id },
+        update: {},
+        create: {
+          id: e.id,
+          title: e.title,
+          description: e.description,
+          location: e.location,
+          category: e.category,
+          startTime: e.startTime,
+          endTime: e.endTime,
+          capacity: e.capacity,
+          status: e.status,
+          organizerId: e.organizerId,
+        },
+      })
+    )
+  ).catch((err) => resolvedLogger.error(`Demo event seed failed: ${err}`));
+
   // RSVP wiring — capacity now comes from Event.capacity in Prisma, no separate seeding.
   const rsvpRepository = CreatePrismaRSVPRepository(prisma);
   const rsvpService = CreateRSVPService(rsvpRepository, sharedEventRepository);
