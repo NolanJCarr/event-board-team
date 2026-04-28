@@ -1,23 +1,26 @@
 import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
-import { CreateAuthService } from "./auth/AuthService";
+import { CreateAuthService } from "./auth/AuthService"
 import { CreateInMemoryUserRepository } from "./repository/InMemoryUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
+// Sprint 3: PrismaClient is the database connection from schema.prisma
+import {PrismaClient} from "@prisma/client";
+// Sprint 3: Prisma version 7 needs an adapter to connect prisma to SQLite
+import {PrismaBetterSqlite3} from "@prisma/adapter-better-sqlite3";
 import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
 import { CreateDashboardService } from "./event/DashboardService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
-import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
+import { CreatePrismaRSVPRepository } from "./repository/PrismaRSVPRepository";
 // Prisma setup
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaEventRepository } from "./repository/PrismaEventRepository";
 import type { Event as CRUDEvent } from "./events/Event";
 // Filter event repo — used by EventService (getEvents with category/timeframe/search)
-import { InMemoryEventRepository as FilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
 import { CreateAttendeeListController} from "./attendee/AttendeeListController";
@@ -27,7 +30,8 @@ import { CreateEventEditingController } from "./events/EventEditingController";
 // CRUD EventService — used for event creation and editing (features 1 & 3)
 import { EventService } from "./events/EventService";
 // Shared event repository — single source of truth for all event data
-import type { IEventRepository as FilterRepoInterface } from "./repository/EventRepository";
+// Sprint 3: The in memory filter repository is replaced with Prisma
+import {CreatePrismaEventRepository} from "./repository/PrismaEventRepository";
 
 // ---------------------------------------------------------------------------
 // Demo seed events — gives the app real data to work with in the browser.
@@ -95,6 +99,10 @@ const DEMO_EVENTS: CRUDEvent[] = [
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
+  // Sprint 3: An adapter is made using the url from the .env file
+  const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./prisma/dev.db" });
+  // Sprint 3: A shared database connection is made for the entire application.
+  const prisma = new PrismaClient({ adapter });
 
   // Authentication & authorization wiring
   const authUsers = CreateInMemoryUserRepository();
@@ -135,20 +143,16 @@ export function createComposedApp(logger?: ILoggingService): IApp {
     )
   ).catch((err) => resolvedLogger.error(`Demo event seed failed: ${err}`));
 
-  // RSVP wiring
-  const rsvpRepository = CreateInMemoryRSVPRepository();
-  for (const event of DEMO_EVENTS) {
-    void rsvpRepository.setCapacity(event.id, event.capacity ?? 9999);
-  }
+  // RSVP wiring — capacity now comes from Event.capacity in Prisma, no separate seeding.
+  const rsvpRepository = CreatePrismaRSVPRepository(prisma);
   const rsvpService = CreateRSVPService(rsvpRepository, sharedEventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
   // Dashboard wiring
   const dashboardService = CreateDashboardService(sharedEventRepository, rsvpRepository);
 
-  // Filter event repo uses demo events for now (search/filter features owned by other team members)
-  const filterEventRepository = new FilterEventRepository();
-  filterEventRepository.seed(DEMO_EVENTS);
+  // Filter event repo delegates to the shared CRUD repo so search/filter sees the same data
+  const filterEventRepository = sharedEventRepository;
 
   // Event services
   const crudEventService = new EventService(sharedEventRepository);
