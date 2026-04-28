@@ -58,6 +58,11 @@ class RSVPController implements IRSVPController {
     }
     this.logger.info(`User ${person.userId} toggled RSVP on event ${eventId}: ${result.value}`);
     if (req.get("HX-Request") === "true") {
+      const fromDashboard = (req.get("HX-Current-URL") ?? "").includes("/my-rsvps");
+      if (fromDashboard) {
+        res.status(200).send("");
+        return;
+      }
       return res.render("event/partials/rsvp-feedback", {
         rsvpStatus: result.value,
         layout: false,
