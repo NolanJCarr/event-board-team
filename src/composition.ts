@@ -16,8 +16,8 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaEventRepository } from "./repository/PrismaEventRepository";
 import type { Event as CRUDEvent } from "./events/Event";
-// Filter event repo — used by EventService (getEvents with category/timeframe/search)
 import { CreateEventService } from "./service/EventService";
+import { PrismaFilterEventRepository } from "./repository/PrismaFilterEventRepository";
 import { CreateEventController } from "./events/EventController";
 import { CreateAttendeeListController} from "./attendee/AttendeeListController";
 import { CreateAttendeeListService} from "./service/AttendeeListService"
@@ -140,8 +140,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // Dashboard wiring
   const dashboardService = CreateDashboardService(sharedEventRepository, rsvpRepository);
 
-  // Filter event repo delegates to the shared CRUD repo so search/filter sees the same data
-  const filterEventRepository = sharedEventRepository;
+  const filterEventRepository = new PrismaFilterEventRepository(prisma);
 
   // Event services
   const crudEventService = new EventService(sharedEventRepository);
