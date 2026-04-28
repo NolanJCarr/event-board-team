@@ -14,9 +14,11 @@ import type { ILoggingService } from "./service/LoggingService";
 import { CreateDashboardService } from "./event/DashboardService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
-import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
-// CRUD event repo — used by RSVPService (findById) and event creation/editing features
-import { InMemoryEventRepository } from "./events/InMemoryEventRepository";
+import { CreatePrismaRSVPRepository } from "./repository/PrismaRSVPRepository";
+// Prisma setup
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaEventRepository } from "./repository/PrismaEventRepository";
 import type { Event as CRUDEvent } from "./events/Event";
 // Filter event repo — used by EventService (getEvents with category/timeframe/search)
 import { CreateEventService } from "./service/EventService";
@@ -109,15 +111,40 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
-  // Shared event repository — single source of truth for ALL event operations
-  const sharedEventRepository = new InMemoryEventRepository();
-  sharedEventRepository.seed(DEMO_EVENTS);
+  // Prisma client initialization with better-sqlite3 adapter
+  const adapter = new PrismaBetterSqlite3({
+    url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+  });
+  const prisma = new PrismaClient({ adapter });
 
-  // RSVP wiring
-  const rsvpRepository = CreateInMemoryRSVPRepository();
-  for (const event of DEMO_EVENTS) {
-    void rsvpRepository.setCapacity(event.id, event.capacity ?? 9999);
-  }
+  // Shared event repository — now using Prisma for persistence
+  const sharedEventRepository = new PrismaEventRepository(prisma);
+
+  // Seed demo events into Prisma so detail pages resolve for known IDs.
+  // Upsert is idempotent — safe to run on every startup.
+  void Promise.all(
+    DEMO_EVENTS.map((e) =>
+      prisma.event.upsert({
+        where: { id: e.id },
+        update: {},
+        create: {
+          id: e.id,
+          title: e.title,
+          description: e.description,
+          location: e.location,
+          category: e.category,
+          startTime: e.startTime,
+          endTime: e.endTime,
+          capacity: e.capacity,
+          status: e.status,
+          organizerId: e.organizerId,
+        },
+      })
+    )
+  ).catch((err) => resolvedLogger.error(`Demo event seed failed: ${err}`));
+
+  // RSVP wiring — capacity now comes from Event.capacity in Prisma, no separate seeding.
+  const rsvpRepository = CreatePrismaRSVPRepository(prisma);
   const rsvpService = CreateRSVPService(rsvpRepository, sharedEventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
@@ -125,8 +152,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const dashboardService = CreateDashboardService(sharedEventRepository, rsvpRepository);
 
   // Filter event repo delegates to the shared CRUD repo so search/filter sees the same data
-  // Sprint 3: This line was changed from in memory to Prisma
-  const filterEventRepository = CreatePrismaEventRepository(prisma);
+  const filterEventRepository = sharedEventRepository;
 
   // Event services
   const crudEventService = new EventService(sharedEventRepository);
