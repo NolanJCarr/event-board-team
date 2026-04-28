@@ -11,8 +11,9 @@ import { CreateDashboardService } from "./event/DashboardService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
 import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
-// CRUD event repo — used by RSVPService (findById) and event creation/editing features
-import { InMemoryEventRepository } from "./events/InMemoryEventRepository";
+// Prisma setup
+import { PrismaClient } from "@prisma/client";
+import { PrismaEventRepository } from "./repository/PrismaEventRepository";
 import type { Event as CRUDEvent } from "./events/Event";
 // Filter event repo — used by EventService (getEvents with category/timeframe/search)
 import { InMemoryEventRepository as FilterEventRepository } from "./repository/InMemoryEventRepository";
@@ -101,9 +102,11 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
-  // Shared event repository — single source of truth for ALL event operations
-  const sharedEventRepository = new InMemoryEventRepository();
-  sharedEventRepository.seed(DEMO_EVENTS);
+  // Prisma client initialization
+  const prisma = new PrismaClient();
+
+  // Shared event repository — now using Prisma for persistence
+  const sharedEventRepository = new PrismaEventRepository(prisma);
 
   // RSVP wiring
   const rsvpRepository = CreateInMemoryRSVPRepository();
@@ -116,9 +119,9 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // Dashboard wiring
   const dashboardService = CreateDashboardService(sharedEventRepository, rsvpRepository);
 
-  // Filter event repo delegates to the shared CRUD repo so search/filter sees the same data
+  // Filter event repo uses demo events for now (search/filter features owned by other team members)
   const filterEventRepository = new FilterEventRepository();
-  filterEventRepository.seedFromCrudRepo(sharedEventRepository);
+  filterEventRepository.seed(DEMO_EVENTS);
 
   // Event services
   const crudEventService = new EventService(sharedEventRepository);
