@@ -32,8 +32,30 @@ class PrismaRSVPRepository implements IRSVPRepository {
     }
   }
 
-  async saveRSVP(_record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>> {
-    return Err(UnexpectedDependencyError("saveRSVP not implemented"));
+  async saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>> {
+    try {
+      // Enforce one RSVP per (userId, eventId): update if present, otherwise create.
+      const existing = await this.prisma.rSVP.findFirst({
+        where: { userId: record.userId, eventId: record.eventId },
+      });
+      const saved = existing
+        ? await this.prisma.rSVP.update({
+            where: { id: existing.id },
+            data: { status: record.status, createdAt: record.createdAt },
+          })
+        : await this.prisma.rSVP.create({
+            data: {
+              id: record.id,
+              userId: record.userId,
+              eventId: record.eventId,
+              status: record.status,
+              createdAt: record.createdAt,
+            },
+          });
+      return Ok(this.toDomain(saved));
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to save RSVP record."));
+    }
   }
 
   async countAttendees(eventId: string): Promise<Result<number, RSVPError>> {
@@ -46,11 +68,21 @@ class PrismaRSVPRepository implements IRSVPRepository {
   }
 
   async updateStatus(
-    _userId: string,
-    _eventId: string,
-    _status: RSVPStatus,
+    userId: string,
+    eventId: string,
+    status: RSVPStatus,
   ): Promise<Result<RSVPRecord | null, RSVPError>> {
-    return Err(UnexpectedDependencyError("updateStatus not implemented"));
+    try {
+      const existing = await this.prisma.rSVP.findFirst({ where: { userId, eventId } });
+      if (!existing) return Ok(null);
+      const updated = await this.prisma.rSVP.update({
+        where: { id: existing.id },
+        data: { status },
+      });
+      return Ok(this.toDomain(updated));
+    } catch {
+      return Err(UnexpectedDependencyError("Failed to update RSVP status."));
+    }
   }
 
   async findAllByEvent(eventId: string): Promise<Result<RSVPRecord[], RSVPError>> {
