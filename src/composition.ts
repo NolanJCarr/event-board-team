@@ -10,7 +10,7 @@ import type { ILoggingService } from "./service/LoggingService";
 import { CreateDashboardService } from "./event/DashboardService";
 import { CreateRSVPService } from "./service/RSVPService";
 import { CreateRSVPController } from "./rsvp/RSVPController";
-import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepository";
+import { CreatePrismaRSVPRepository } from "./repository/PrismaRSVPRepository";
 // Prisma setup
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
@@ -135,11 +135,8 @@ export function createComposedApp(logger?: ILoggingService): IApp {
     )
   ).catch((err) => resolvedLogger.error(`Demo event seed failed: ${err}`));
 
-  // RSVP wiring
-  const rsvpRepository = CreateInMemoryRSVPRepository();
-  for (const event of DEMO_EVENTS) {
-    void rsvpRepository.setCapacity(event.id, event.capacity ?? 9999);
-  }
+  // RSVP wiring — capacity now comes from Event.capacity in Prisma, no separate seeding.
+  const rsvpRepository = CreatePrismaRSVPRepository(prisma);
   const rsvpService = CreateRSVPService(rsvpRepository, sharedEventRepository);
   const rsvpController = CreateRSVPController(rsvpService, resolvedLogger);
 
