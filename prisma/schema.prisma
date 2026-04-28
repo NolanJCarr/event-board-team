@@ -43,4 +43,13 @@ model RSVP{
   createdAt DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id String @id
+  email String
+  displayName String
+
+  rsvps RSVP[]
 }
