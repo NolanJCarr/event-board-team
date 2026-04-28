@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(npm test:*)",
+      "Skill(superpowers:using-superpowers)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
