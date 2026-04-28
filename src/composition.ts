@@ -1,9 +1,11 @@
 import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
-import { CreateAuthService } from "./auth/AuthService";
+import { CreateAuthService } from "./auth/AuthService"
 import { CreateInMemoryUserRepository } from "./repository/InMemoryUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
+import {PrismaClient} from "@prisma/client";
+import {PrismaBetterSqlite3} from "@prisma/adapter-better-sqlite3";
 import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
@@ -15,7 +17,6 @@ import { CreateInMemoryRSVPRepository } from "./repository/InMemoryRSVPRepositor
 import { InMemoryEventRepository } from "./events/InMemoryEventRepository";
 import type { Event as CRUDEvent } from "./events/Event";
 // Filter event repo — used by EventService (getEvents with category/timeframe/search)
-import { InMemoryEventRepository as FilterEventRepository } from "./repository/InMemoryEventRepository";
 import { CreateEventService } from "./service/EventService";
 import { CreateEventController } from "./events/EventController";
 import { CreateAttendeeListController} from "./attendee/AttendeeListController";
@@ -25,7 +26,7 @@ import { CreateEventEditingController } from "./events/EventEditingController";
 // CRUD EventService — used for event creation and editing (features 1 & 3)
 import { EventService } from "./events/EventService";
 // Shared event repository — single source of truth for all event data
-import type { IEventRepository as FilterRepoInterface } from "./repository/EventRepository";
+import {CreatePrismaEventRepository} from "./repository/PrismaEventRepository";
 
 // ---------------------------------------------------------------------------
 // Demo seed events — gives the app real data to work with in the browser.
@@ -93,6 +94,8 @@ const DEMO_EVENTS: CRUDEvent[] = [
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
+  const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./prisma/dev.db" });
+  const prisma = new PrismaClient({ adapter });
 
   // Authentication & authorization wiring
   const authUsers = CreateInMemoryUserRepository();
@@ -117,8 +120,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const dashboardService = CreateDashboardService(sharedEventRepository, rsvpRepository);
 
   // Filter event repo delegates to the shared CRUD repo so search/filter sees the same data
-  const filterEventRepository = new FilterEventRepository();
-  filterEventRepository.seedFromCrudRepo(sharedEventRepository);
+  const filterEventRepository = CreatePrismaEventRepository(prisma);
 
   // Event services
   const crudEventService = new EventService(sharedEventRepository);

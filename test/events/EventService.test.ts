@@ -9,6 +9,9 @@ function makeFakeRepository(events: Event[]): IEventRepository {
     async getEvents(_filter: GetEventsFilter) {
       return Ok(events);
     },
+    async findById(_eventId: string) {
+      return Ok(null);
+    },
   };
 }
 
