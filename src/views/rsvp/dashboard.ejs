@@ -10,7 +10,7 @@
     <% } else { %>
       <div class="grid gap-4">
         <% dashboard.upcoming.forEach(function(entry) { %>
-          <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+          <div id="rsvp-row-<%= entry.event.id %>" class="bg-white rounded-lg shadow p-6 border border-gray-100">
             <div class="flex items-start justify-between">
               <div>
                 <h3 class="text-lg font-semibold text-gray-900"><%= entry.event.title %></h3>
@@ -29,13 +29,12 @@
               <span><%= entry.event.location %></span>
               <span><%= entry.event.startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) %></span>
             </div>
-            <!-- Cancel RSVP — Sprint 2 will replace this with an HTMX partial -->
-            <form method="POST" action="/events/<%= entry.event.id %>/rsvp" class="mt-4">
-              <button
-                type="submit"
-                class="text-sm text-red-600 hover:text-red-800 underline"
-              >Cancel RSVP</button>
-            </form>
+            <button
+              hx-post="/events/<%= entry.event.id %>/rsvp"
+              hx-target="#rsvp-row-<%= entry.event.id %>"
+              hx-swap="delete"
+              class="mt-4 text-sm text-red-600 hover:text-red-800 underline"
+            >Cancel RSVP</button>
           </div>
         <% }) %>
       </div>
