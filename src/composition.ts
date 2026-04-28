@@ -4,7 +4,9 @@ import { CreateAuthService } from "./auth/AuthService"
 import { CreateInMemoryUserRepository } from "./repository/InMemoryUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
+// Sprint 3: PrismaClient is the database connection from schema.prisma
 import {PrismaClient} from "@prisma/client";
+// Sprint 3: Prisma version 7 needs an adapter to connect prisma to SQLite
 import {PrismaBetterSqlite3} from "@prisma/adapter-better-sqlite3";
 import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
@@ -26,6 +28,7 @@ import { CreateEventEditingController } from "./events/EventEditingController";
 // CRUD EventService — used for event creation and editing (features 1 & 3)
 import { EventService } from "./events/EventService";
 // Shared event repository — single source of truth for all event data
+// Sprint 3: The in memory filter repository is replaced with Prisma
 import {CreatePrismaEventRepository} from "./repository/PrismaEventRepository";
 
 // ---------------------------------------------------------------------------
@@ -94,7 +97,9 @@ const DEMO_EVENTS: CRUDEvent[] = [
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
+  // Sprint 3: An adapter is made using the url from the .env file
   const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./prisma/dev.db" });
+  // Sprint 3: A shared database connection is made for the entire application.
   const prisma = new PrismaClient({ adapter });
 
   // Authentication & authorization wiring
@@ -120,6 +125,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const dashboardService = CreateDashboardService(sharedEventRepository, rsvpRepository);
 
   // Filter event repo delegates to the shared CRUD repo so search/filter sees the same data
+  // Sprint 3: This line was changed from in memory to Prisma
   const filterEventRepository = CreatePrismaEventRepository(prisma);
 
   // Event services
