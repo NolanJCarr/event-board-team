@@ -50,7 +50,9 @@ class RSVPController implements IRSVPController {
     if (result.ok === false) {
       const status = this.mapErrorStatus(result.value);
       this.logger.warn(`RSVP toggle failed for user ${person.userId}: ${result.value.message}`);
-      res.status(status).render("partials/error", {
+      // HTMX only swaps on 2xx — return 200 with the error partial so the message appears inline
+      const responseStatus = req.get("HX-Request") === "true" ? 200 : status;
+      res.status(responseStatus).render("partials/error", {
         message: result.value.message,
         layout: false,
       });
@@ -58,6 +60,15 @@ class RSVPController implements IRSVPController {
     }
     this.logger.info(`User ${person.userId} toggled RSVP on event ${eventId}: ${result.value}`);
     if (req.get("HX-Request") === "true") {
+      const fromDashboard = (req.get("HX-Current-URL") ?? "").includes("/my-rsvps");
+      if (fromDashboard) {
+        const dashResult = await this.rsvpService.getMyRSVPs(person);
+        if (dashResult.ok === false) {
+          res.status(500).render("partials/error", { message: dashResult.value.message, layout: false });
+          return;
+        }
+        return res.render("rsvp/partials/dashboard-sections", { dashboard: dashResult.value, layout: false });
+      }
       return res.render("event/partials/rsvp-feedback", {
         rsvpStatus: result.value,
         layout: false,
