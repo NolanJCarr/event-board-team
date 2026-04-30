@@ -79,10 +79,8 @@ class RSVPService implements IRSVPService {
       // Checks if the capacity of the event was retreived successfully
       return Err(UnexpectedDependencyError(capacityResult.value.message));
     }
-    if (capacityResult.value === null) {
-      //Another check to ensure the capacity was retreived correctly
-      return Err(EventNotFoundError(`Event ${eventId} not found.`));
-    }
+    // null means no capacity limit — treat as unlimited (event existence already confirmed above)
+    const capacity = capacityResult.value ?? Number.MAX_SAFE_INTEGER;
 
     const existingResult = await this.repository.findRSVP(actor.userId, eventId);
     if (existingResult.ok === false) {
@@ -94,15 +92,15 @@ class RSVPService implements IRSVPService {
 
     if (existing === null) {
       // Path for a brand new RSVP because there will be no existing data for the connection.
-      return this.createRSVP(actor.userId, eventId, capacityResult.value);
+      return this.createRSVP(actor.userId, eventId, capacity);
     }
 
     if (existing.status === "going" || existing.status === "waitlisted") {
-      // for the instance of if they allready are active for the RSVP it cancels it 
+      // for the instance of if they allready are active for the RSVP it cancels it
       return this.cancelRSVP(existing, eventId);
     }
     //this means they previously had a active RSVP and now it will be reactivated/created.
-    return this.createRSVP(actor.userId, eventId, capacityResult.value);
+    return this.createRSVP(actor.userId, eventId, capacity);
   }
 
   private async createRSVP(userId: string, eventId: string, capacity: number,): Promise<Result<RSVPOutcome, RSVPError>> {
