@@ -1,4 +1,4 @@
-<div id="event-create-form" class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+<div id="event-create-form" class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg" x-data="{ titleCount: '<%= formData.title ? formData.title.length : 0 %>', descriptionCount: '<%= formData.description ? formData.description.length : 0 %>' }">
   <h2 class="text-2xl font-bold text-slate-900 mb-4">Create New Event</h2>
 
   <% if (pageError) { %>
@@ -26,8 +26,11 @@
         value="<%= formData.title || '' %>"
         placeholder="e.g., Spring Hackathon 2026"
         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        x-on:input="titleCount = $event.target.value.length"
       />
-      <p class="text-xs text-gray-500 mt-1">Maximum 200 characters</p>
+      <p class="text-xs mt-1" :class="titleCount > 180 ? 'text-orange-600 font-medium' : titleCount > 195 ? 'text-red-600 font-semibold' : 'text-gray-500'">
+        <span x-text="titleCount"></span> / 200 characters
+      </p>
     </div>
 
     <div>
@@ -42,8 +45,11 @@
         rows="4"
         placeholder="Describe your event..."
         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        x-on:input="descriptionCount = $event.target.value.length"
       ><%= formData.description || '' %></textarea>
-      <p class="text-xs text-gray-500 mt-1">Maximum 2000 characters</p>
+      <p class="text-xs mt-1" :class="descriptionCount > 1800 ? 'text-orange-600 font-medium' : descriptionCount > 1950 ? 'text-red-600 font-semibold' : 'text-gray-500'">
+        <span x-text="descriptionCount"></span> / 2000 characters
+      </p>
     </div>
 
     <div>
