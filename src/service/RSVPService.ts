@@ -48,6 +48,12 @@ export interface IRSVPService {
    * past/cancelled sections. Only accessible to members (role "user").
    */
   getMyRSVPs(actor: RSVPActor, now?: Date): Promise<Result<MyRSVPsDashboard, RSVPError>>;
+
+  /**
+   * Return the user's current RSVP status for a specific event, or null if they
+   * have never RSVPed. Used to pre-load button state on the event detail page.
+   */
+  getStatusForEvent(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome | null, RSVPError>>;
 }
 
 class RSVPService implements IRSVPService {
@@ -217,6 +223,14 @@ class RSVPService implements IRSVPService {
     pastAndCancelled.sort((a, b) => b.event.startTime.getTime() - a.event.startTime.getTime());
 
     return Ok({ upcoming, pastAndCancelled });
+  }
+
+  async getStatusForEvent(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome | null, RSVPError>> {
+    const result = await this.repository.findRSVP(actor.userId, eventId);
+    if (result.ok === false) {
+      return Err(UnexpectedDependencyError(result.value.message));
+    }
+    return Ok(result.value?.status ?? null);
   }
 }
 

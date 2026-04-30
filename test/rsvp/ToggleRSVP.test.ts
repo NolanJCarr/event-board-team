@@ -219,3 +219,61 @@ describe("RSVPService.toggleRSVP", () => {
     if(pos2.ok) expect(pos2.value).toBe(2);
   });
 });
+
+describe("RSVPService.getStatusForEvent", () => {
+  it("returns null when the user has no RSVP for the event", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+
+    const result = await service.getStatusForEvent(MEMBER, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBeNull();
+  });
+
+  it("returns 'going' after the user RSVPs to an event with capacity", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 10);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);
+
+    const result = await service.getStatusForEvent(MEMBER, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe("going");
+  });
+
+  it("returns 'waitlisted' when the event is full and the user is on the waitlist", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 1);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);   // fills the one spot
+    await service.toggleRSVP(MEMBER2, "evt-1", NOW);  // waitlisted
+
+    const result = await service.getStatusForEvent(MEMBER2, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe("waitlisted");
+  });
+
+  it("returns 'cancelled' after the user cancels their active RSVP", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 10);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);  // going
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);  // cancel
+
+    const result = await service.getStatusForEvent(MEMBER, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe("cancelled");
+  });
+});
