@@ -30,17 +30,19 @@
   <!-- Event Editing Form -->
   <div x-data="{
     hasUnsavedChanges: false,
+    isSubmitting: false,
     originalValues: {
-      title: '<%= event.title.replace(/'/g, "\\'") %>',
-      description: '<%= event.description.replace(/'/g, "\\'") %>',
-      location: '<%= event.location.replace(/'/g, "\\'") %>',
+      title: `<%= event.title.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      description: `<%= event.description.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      location: `<%= event.location.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
       category: '<%= event.category %>',
       startTime: '<%= startTimeFormatted %>',
       endTime: '<%= endTimeFormatted %>',
       capacity: '<%= event.capacity !== undefined ? event.capacity : "" %>'
     },
     checkForChanges() {
-      const form = this.$el.querySelector('form');
+      const form = $refs.editForm;
+      if (!form) return;
       const currentValues = {
         title: form.title.value,
         description: form.description.value,
@@ -56,13 +58,16 @@
       if (this.hasUnsavedChanges) {
         if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
           event.preventDefault();
+        } else {
+          // User confirmed - disable warning for this navigation
+          this.hasUnsavedChanges = false;
         }
       }
     }
   }"
-  x-init="window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; } })"
+  x-init="window.addEventListener('beforeunload', (e) => { if ($data.hasUnsavedChanges && !$data.isSubmitting) { e.preventDefault(); e.returnValue = ''; } })"
   >
-  <form method="POST" action="/events/<%= event.id %>" class="bg-white rounded-lg shadow p-6" @input="checkForChanges()">
+  <form x-ref="editForm" method="POST" action="/events/<%= event.id %>" class="bg-white rounded-lg shadow p-6" @input="checkForChanges()" @change="checkForChanges()" @submit="isSubmitting = true">
 
     <!-- Title -->
     <div class="mb-4">

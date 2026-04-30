@@ -1,16 +1,18 @@
 <div id="event-detail" class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg" x-data="{
     hasUnsavedChanges: false,
+    isSubmitting: false,
     originalValues: {
-      title: '<%= event.title.replace(/'/g, "\\'") %>',
-      description: '<%= event.description.replace(/'/g, "\\'") %>',
-      location: '<%= event.location.replace(/'/g, "\\'") %>',
+      title: `<%= event.title.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      description: `<%= event.description.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      location: `<%= event.location.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
       category: '<%= event.category %>',
       startTime: '<%= startTimeFormatted %>',
       endTime: '<%= endTimeFormatted %>',
       capacity: '<%= event.capacity !== undefined ? event.capacity : "" %>'
     },
     checkForChanges() {
-      const form = this.$el.querySelector('form');
+      const form = $refs.editForm;
+      if (!form) return;
       const currentValues = {
         title: form.title.value,
         description: form.description.value,
@@ -26,6 +28,9 @@
       if (this.hasUnsavedChanges) {
         if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
           event.preventDefault();
+        } else {
+          // User confirmed - disable warning for this navigation
+          this.hasUnsavedChanges = false;
         }
       }
     }
@@ -39,11 +44,14 @@
   <% } %>
 
   <form
+    x-ref="editForm"
     hx-post="/events/<%= event.id %>"
     hx-target="#event-detail"
     hx-swap="outerHTML"
     class="space-y-4"
     @input="checkForChanges()"
+    @change="checkForChanges()"
+    @submit="isSubmitting = true"
   >
     <div>
       <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
