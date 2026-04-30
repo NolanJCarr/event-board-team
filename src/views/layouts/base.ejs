@@ -24,6 +24,7 @@
               <a href="/admin/users" class="text-blue-700 font-semibold no-underline hover:underline">Manage Users</a>
             <% } %>
             <a href="/my-rsvps" class="text-blue-700 font-semibold no-underline hover:underline">My RSVPs</a>
+            <a href="/events" class="text-blue-700 font-semibold no-underline hover:underline">Browse Events</a>
             <% if (session.authenticatedUser.role === "admin" || session.authenticatedUser.role === "staff") { %>
               <a href="/events/new" class="text-blue-700 font-semibold no-underline hover:underline">Create Event</a>
               <a href="/dashboard" class="text-blue-700 font-semibold no-underline hover:underline">Organizer Dashboard</a>

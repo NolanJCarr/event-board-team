@@ -1,6 +1,6 @@
 import { Ok, Err, type Result } from "../lib/result";
 import { UnexpectedDependencyError, type RSVPError } from "../rsvp/errors";
-import type { IRSVPRepository, RSVPRecord, RSVPStatus } from "./RSVPRepository";
+import type { IRSVPRepository, RSVPRecord, RSVPStatus, RSVPWithEventData } from "./RSVPRepository";
  
 class InMemoryRSVPRepository implements IRSVPRepository {
   // keyed by `${userId}:${eventId}`
@@ -51,6 +51,12 @@ class InMemoryRSVPRepository implements IRSVPRepository {
     } catch {
       return Err(UnexpectedDependencyError("Failed to fetch RSVPs for user."));
     }
+  }
+
+  async findAllByUserWithEventData(userId: string): Promise<Result<RSVPWithEventData[], RSVPError>> {
+    const result = await this.findAllByUser(userId);
+    if (result.ok === false) return result;
+    return Ok(result.value.map((rsvp) => ({ rsvp, event: null })));
   }
  
   async saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>> {

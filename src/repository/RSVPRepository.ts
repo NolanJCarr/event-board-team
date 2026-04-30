@@ -1,5 +1,11 @@
 import type { Result } from "../lib/result";
 import type { RSVPError } from "../rsvp/errors";
+import type { Event } from "../events/Event";
+
+export interface RSVPWithEventData {
+  rsvp: RSVPRecord;
+  event: Event | null;
+}
 
 export type RSVPStatus = "going" | "waitlisted" | "cancelled";
 
@@ -19,6 +25,7 @@ export interface IRSVPRepository {
   // ── RSVP records ─────────────────────────────────────────────────────────────
   findRSVP(userId: string, eventId: string): Promise<Result<RSVPRecord | null, RSVPError>>;
   findAllByUser(userId: string): Promise<Result<RSVPRecord[], RSVPError>>;
+  findAllByUserWithEventData(userId: string): Promise<Result<RSVPWithEventData[], RSVPError>>;
   saveRSVP(record: RSVPRecord): Promise<Result<RSVPRecord, RSVPError>>;
   countAttendees(eventId: string): Promise<Result<number, RSVPError>>;
   updateStatus(userId: string, eventId: string,status: RSVPStatus,): Promise<Result<RSVPRecord | null, RSVPError>>;

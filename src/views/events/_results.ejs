@@ -11,7 +11,11 @@
           <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
             <div class="flex items-start justify-between">
               <div>
-                <h2 class="text-xl font-semibold text-gray-900"><%= event.title %></h2>
+                <h2 class="text-xl font-semibold text-gray-900">
+                  <a href="/events/<%= event.id %>" class="hover:text-blue-600 hover:underline">
+                    <%= event.title %>
+                  </a>
+                </h2>
                 <p class="text-sm text-blue-600 mt-1 capitalize"><%= event.category %></p>
               </div>
               <span class="text-sm text-gray-400">
