@@ -1,0 +1,50 @@
+<div id="rsvp-section">
+  <% if (rsvpStatus === "going") { %>
+    <div class="mt-6 flex items-center gap-4">
+      <span class="text-sm font-medium text-green-600">You're going!</span>
+      <button
+        hx-post="/events/<%= eventId %>/rsvp"
+        hx-target="#rsvp-section"
+        hx-swap="outerHTML"
+        class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+      >
+        Cancel RSVP
+      </button>
+    </div>
+  <% } else if (rsvpStatus === "waitlisted") { %>
+    <div class="mt-6 flex items-center gap-4">
+      <span class="text-sm font-medium text-yellow-600">You've been waitlisted.</span>
+      <button
+        hx-post="/events/<%= eventId %>/rsvp"
+        hx-target="#rsvp-section"
+        hx-swap="outerHTML"
+        class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+      >
+        Cancel
+      </button>
+    </div>
+  <% } else if (rsvpStatus === "cancelled") { %>
+    <div class="mt-6 flex items-center gap-4">
+      <button
+        hx-post="/events/<%= eventId %>/rsvp"
+        hx-target="#rsvp-section"
+        hx-swap="outerHTML"
+        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+      >
+        RSVP
+      </button>
+      <span class="text-sm font-medium text-red-600">RSVP cancelled.</span>
+    </div>
+  <% } else { %>
+    <div class="mt-6 flex items-center gap-4">
+      <button
+        hx-post="/events/<%= eventId %>/rsvp"
+        hx-target="#rsvp-section"
+        hx-swap="outerHTML"
+        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+      >
+        RSVP
+      </button>
+    </div>
+  <% } %>
+</div>

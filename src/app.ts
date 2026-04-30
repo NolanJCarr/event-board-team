@@ -10,6 +10,7 @@ import {
 import type { UserRole } from "./auth/User";
 import { IApp } from "./contracts";
 import type { IRSVPController } from "./rsvp/RSVPController";
+import type { IRSVPService, RSVPOutcome } from "./service/RSVPService";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -45,6 +46,7 @@ class ExpressApp implements IApp {
     private readonly authController: IAuthController,
     // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
+    private readonly rsvpService: IRSVPService,
     private readonly eventController: IEventController,
     private readonly attendeeListController: IAttendeeListController,
     private readonly eventCreationController: IEventCreationController,
@@ -309,6 +311,7 @@ class ExpressApp implements IApp {
             session: browserSession,
             event: null,
             pageError: error.message,
+            rsvpStatus: null,
           });
           return;
         }
@@ -321,10 +324,20 @@ class ExpressApp implements IApp {
           });
         }
 
+        let rsvpStatus: RSVPOutcome | null = null;
+        if (user?.role === "user") {
+          const statusResult = await this.rsvpService.getStatusForEvent(
+            { userId: user.userId, role: "user" },
+            typeof req.params.id === "string" ? req.params.id : "",
+          );
+          if (statusResult.ok) rsvpStatus = statusResult.value;
+        }
+
         res.render("event/detail", {
           session: browserSession,
           event: result.value,
           pageError: null,
+          rsvpStatus,
         });
       }),
     );
@@ -493,6 +506,7 @@ class ExpressApp implements IApp {
 export function CreateApp(
   authController: IAuthController,
   rsvpController: IRSVPController,
+  rsvpService: IRSVPService,
   eventController: IEventController,
   attendeeListController: IAttendeeListController,
   eventCreationController: IEventCreationController,
@@ -501,5 +515,5 @@ export function CreateApp(
   eventService: IEventService,
   dashboardService: IDashboardService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, attendeeListController, eventCreationController, eventEditingController, logger, eventService, dashboardService);
+  return new ExpressApp(authController, rsvpController, rsvpService, eventController, attendeeListController, eventCreationController, eventEditingController, logger, eventService, dashboardService);
 }
