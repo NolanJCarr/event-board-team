@@ -26,11 +26,11 @@
     }"
   >
     <div class="mb-6">
-      <label for="search" class="block text-sm font-semibold text-gray-700 mb-2">
+      <label for="search" class="block text-base font-bold text-gray-800 mb-2">
         Search Events
       </label>
       <div class="relative">
-      <input
+        <input
         type="text"
         id="search"
         x-model="search"
@@ -42,7 +42,7 @@
         hx-push-url="true"
         hx-trigger="input changed delay:400ms"
         hx-include="[name='category'],[name='timeframe']"
-        class="w-full border border-gray-300 rounded-lg px-4 py-3 pr-10 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full border border-gray-400 rounded-lg px-4 py-4 pr-10 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       />
       <button
         type="button"
@@ -66,15 +66,16 @@
           Category
         </label>
         <select
-          id="category"
-          name="category"
-          x-model="category"
-          hx-get="/events/results"
-          hx-target="#event-results"
-          hx-push-url="true"
-          hx-trigger="change"
-          hx-include="[name='search'],[name='timeframe']"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        id="category"
+        name="category"
+        x-model="category"
+        hx-get="/events/results"
+        hx-target="#event-results"
+        hx-push-url="true"
+        hx-trigger="change"
+        hx-include="[name='search'],[name='timeframe']"
+        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        x-bind:class="category !== '' ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50 font-semibold text-blue-700' : ''"
         >
           <option value="">All Categories</option>
           <option value="music">Music</option>
@@ -99,6 +100,7 @@
           hx-target="#event-results"
           hx-push-url="true"
           hx-trigger="change"
+          x-model="timeframe"
           hx-include="[name='search'],[name='category']"
           class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           x-bind:class="timeframe !== 'all' ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50 font-semibold text-blue-700' : ''"
