@@ -316,14 +316,6 @@ class ExpressApp implements IApp {
           return;
         }
 
-        if (this.isHtmxRequest(req)) {
-          return res.render("event/partials/event-detail", {
-            event: result.value,
-            session: browserSession,
-            layout: false,
-          });
-        }
-
         let rsvpStatus: RSVPOutcome | null = null;
         if (user?.role === "user") {
           const statusResult = await this.rsvpService.getStatusForEvent(
@@ -331,6 +323,15 @@ class ExpressApp implements IApp {
             typeof req.params.id === "string" ? req.params.id : "",
           );
           if (statusResult.ok) rsvpStatus = statusResult.value;
+        }
+
+        if (this.isHtmxRequest(req)) {
+          return res.render("event/partials/event-detail", {
+            event: result.value,
+            session: browserSession,
+            rsvpStatus,
+            layout: false,
+          });
         }
 
         res.render("event/detail", {
