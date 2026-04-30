@@ -54,6 +54,12 @@ export interface IRSVPService {
    * have never RSVPed. Used to pre-load button state on the event detail page.
    */
   getStatusForEvent(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome | null, RSVPError>>;
+
+  /**
+   * Return a map of eventId → active RSVP status for all events where the user
+   * is currently going or waitlisted. Used to pre-load button states on the events list.
+   */
+  getUserRSVPStatuses(actor: RSVPActor): Promise<Result<Record<string, RSVPOutcome>, RSVPError>>;
 }
 
 class RSVPService implements IRSVPService {
@@ -231,6 +237,20 @@ class RSVPService implements IRSVPService {
       return Err(UnexpectedDependencyError(result.value.message));
     }
     return Ok(result.value?.status ?? null);
+  }
+
+  async getUserRSVPStatuses(actor: RSVPActor): Promise<Result<Record<string, RSVPOutcome>, RSVPError>> {
+    const result = await this.repository.findAllByUser(actor.userId);
+    if (result.ok === false) {
+      return Err(UnexpectedDependencyError(result.value.message));
+    }
+    const map: Record<string, RSVPOutcome> = {};
+    for (const record of result.value) {
+      if (record.status === "going" || record.status === "waitlisted") {
+        map[record.eventId] = record.status;
+      }
+    }
+    return Ok(map);
   }
 }
 

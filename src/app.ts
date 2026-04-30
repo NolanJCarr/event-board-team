@@ -261,8 +261,11 @@ class ExpressApp implements IApp {
       "/events",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
-        // A user must be logged in to see the events.
-        // It is handed to the event controller for the rest.
+        const user = getAuthenticatedUser(sessionStore(req));
+        if (user?.role === "user") {
+          const statusesResult = await this.rsvpService.getUserRSVPStatuses({ userId: user.userId, role: "user" });
+          if (statusesResult.ok) res.locals.rsvpStatuses = statusesResult.value;
+        }
         await this.eventController.showEvents(req, res, sessionStore(req));
       }),
     );
@@ -271,9 +274,14 @@ class ExpressApp implements IApp {
       "/events/results",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
+        const user = getAuthenticatedUser(sessionStore(req));
+        if (user?.role === "user") {
+          const statusesResult = await this.rsvpService.getUserRSVPStatuses({ userId: user.userId, role: "user" });
+          if (statusesResult.ok) res.locals.rsvpStatuses = statusesResult.value;
+        }
         await this.eventController.showEventsPartial(req, res, sessionStore(req));
-  }),
-);
+      }),
+    );
     this.app.get(
       "/events/new",
       asyncHandler(async (req, res) => {
