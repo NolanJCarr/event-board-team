@@ -1,4 +1,35 @@
-<div id="event-detail" class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+<div id="event-detail" class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg" x-data="{
+    hasUnsavedChanges: false,
+    originalValues: {
+      title: '<%= event.title.replace(/'/g, "\\'") %>',
+      description: '<%= event.description.replace(/'/g, "\\'") %>',
+      location: '<%= event.location.replace(/'/g, "\\'") %>',
+      category: '<%= event.category %>',
+      startTime: '<%= startTimeFormatted %>',
+      endTime: '<%= endTimeFormatted %>',
+      capacity: '<%= event.capacity !== undefined ? event.capacity : "" %>'
+    },
+    checkForChanges() {
+      const form = this.$el.querySelector('form');
+      const currentValues = {
+        title: form.title.value,
+        description: form.description.value,
+        location: form.location.value,
+        category: form.category.value,
+        startTime: form.startTime.value,
+        endTime: form.endTime.value,
+        capacity: form.capacity.value
+      };
+      this.hasUnsavedChanges = JSON.stringify(currentValues) !== JSON.stringify(this.originalValues);
+    },
+    confirmCancel(event) {
+      if (this.hasUnsavedChanges) {
+        if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+          event.preventDefault();
+        }
+      }
+    }
+  }">
   <h2 class="text-2xl font-bold text-slate-900 mb-4">Edit Event</h2>
 
   <% if (pageError) { %>
@@ -12,6 +43,7 @@
     hx-target="#event-detail"
     hx-swap="outerHTML"
     class="space-y-4"
+    @input="checkForChanges()"
   >
     <div>
       <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -74,7 +106,8 @@
         hx-get="/events/<%= event.id %>"
         hx-target="#event-detail"
         hx-swap="outerHTML"
-        class="flex-1 bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+        class="flex-1 bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+        @click="confirmCancel($event)">
         Cancel
       </button>
     </div>

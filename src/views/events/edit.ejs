@@ -28,7 +28,41 @@
   <% } %>
 
   <!-- Event Editing Form -->
-  <form method="POST" action="/events/<%= event.id %>" class="bg-white rounded-lg shadow p-6">
+  <div x-data="{
+    hasUnsavedChanges: false,
+    originalValues: {
+      title: '<%= event.title.replace(/'/g, "\\'") %>',
+      description: '<%= event.description.replace(/'/g, "\\'") %>',
+      location: '<%= event.location.replace(/'/g, "\\'") %>',
+      category: '<%= event.category %>',
+      startTime: '<%= startTimeFormatted %>',
+      endTime: '<%= endTimeFormatted %>',
+      capacity: '<%= event.capacity !== undefined ? event.capacity : "" %>'
+    },
+    checkForChanges() {
+      const form = this.$el.querySelector('form');
+      const currentValues = {
+        title: form.title.value,
+        description: form.description.value,
+        location: form.location.value,
+        category: form.category.value,
+        startTime: form.startTime.value,
+        endTime: form.endTime.value,
+        capacity: form.capacity.value
+      };
+      this.hasUnsavedChanges = JSON.stringify(currentValues) !== JSON.stringify(this.originalValues);
+    },
+    confirmCancel(event) {
+      if (this.hasUnsavedChanges) {
+        if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+          event.preventDefault();
+        }
+      }
+    }
+  }"
+  x-init="window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; } })"
+  >
+  <form method="POST" action="/events/<%= event.id %>" class="bg-white rounded-lg shadow p-6" @input="checkForChanges()">
 
     <!-- Title -->
     <div class="mb-4">
@@ -176,6 +210,7 @@
         href="/events/<%= event.id %>"
         class="flex-1 text-center bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
         aria-label="Cancel editing and return to event details"
+        @click="confirmCancel($event)"
       >
         Cancel
       </a>
@@ -200,4 +235,5 @@
       <% } %>
     </div>
   </form>
+  </div>
 </div>
