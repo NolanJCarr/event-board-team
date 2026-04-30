@@ -1,4 +1,10 @@
-<div id="rsvp-section">
+<div id="rsvp-section"
+     x-data="{ show: false }"
+     x-init="$nextTick(() => show = true)"
+     x-show="show"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 scale-95"
+     x-transition:enter-end="opacity-100 scale-100">
   <% if (rsvpStatus === "going") { %>
     <div class="mt-6 flex items-center gap-4">
       <span class="text-sm font-medium text-green-600">You're going!</span>
