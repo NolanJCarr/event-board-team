@@ -322,14 +322,17 @@ class ExpressApp implements IApp {
             { userId: user.userId, role: "user" },
             typeof req.params.id === "string" ? req.params.id : "",
           );
-          if (statusResult.ok) rsvpStatus = statusResult.value;
+          if (statusResult.ok) {
+            rsvpStatus = statusResult.value;
+          } else {
+            this.logger.warn(`getStatusForEvent failed for user ${user.userId}: ${(statusResult.value as any).message}`);
+          }
         }
 
         if (this.isHtmxRequest(req)) {
           return res.render("event/partials/event-detail", {
             event: result.value,
             session: browserSession,
-            rsvpStatus,
             layout: false,
           });
         }
