@@ -18,7 +18,6 @@
     hx-target="#event-results"
     hx-push-url="true"
     class="bg-white rounded-lg shadow p-6 mb-8"
-
     x-data="{
       search: '<%= searchQuery %>',
       category: '<%= category %>',
@@ -31,33 +30,36 @@
       </label>
       <div class="relative">
         <input
-        type="text"
-        id="search"
-        x-model="search"
-        name="search"
-        value="<%= searchQuery %>"
-        placeholder="Search by title, description, or location..."
-        hx-get="/events/results"
-        hx-target="#event-results"
-        hx-push-url="true"
-        hx-trigger="input changed delay:400ms"
-        hx-include="[name='category'],[name='timeframe']"
-        class="w-full border border-gray-400 rounded-lg px-4 py-4 pr-10 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      />
-      <button
-        type="button"
-        x-show="search.length >0"
-        x-on:click="
-        search = '';
-        document.getElementById('search').value = '';
-        htmx.trigger(document.getElementById('search'), 'input');"
-        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-        aria-label="Clear Search">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
+          type="text"
+          id="search"
+          x-model="search"
+          name="search"
+          placeholder="Search by title, description, or location..."
+          hx-get="/events/results"
+          hx-target="#event-results"
+          hx-push-url="true"
+          hx-trigger="input delay:400ms"
+          hx-include="[name='category'],[name='timeframe']"
+          class="w-full border border-gray-400 rounded-lg px-4 py-4 pr-10 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        <button
+          type="button"
+          x-show="search.length > 0"
+          x-on:click="
+            search = '';
+            $nextTick(() => {
+              const input = document.getElementById('search');
+              input.value = '';
+              input.dispatchEvent(new Event('input'));
+            });"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+          aria-label="Clear Search"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div class="flex flex-col sm:flex-row gap-4">
@@ -66,25 +68,24 @@
           Category
         </label>
         <select
-        id="category"
-        name="category"
-        x-model="category"
-        hx-get="/events/results"
-        hx-target="#event-results"
-        hx-push-url="true"
-        hx-trigger="change"
-        hx-include="[name='search'],[name='timeframe']"
-        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        x-bind:class="category !== '' ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50 font-semibold text-blue-700' : ''"
+          id="category"
+          name="category"
+          x-model="category"
+          hx-get="/events/results"
+          hx-target="#event-results"
+          hx-push-url="true"
+          hx-trigger="change"
+          hx-include="[name='search'],[name='timeframe']"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          x-bind:class="category !== '' ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50 font-semibold text-blue-700' : ''"
         >
           <option value="">All Categories</option>
-          <option value="music">Music</option>
+          <option value="social">Social</option>
+          <option value="educational">Educational</option>
+          <option value="volunteer">Volunteer</option>
           <option value="sports">Sports</option>
-          <option value="food">Food & Drink</option>
-          <option value="arts" >Arts & Culture</option>
-          <option value="community" >Community</option>
+          <option value="arts">Arts</option>
           <option value="technology">Technology</option>
-          <option value="volunteer" >Volunteer</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -96,11 +97,11 @@
         <select
           id="timeframe"
           name="timeframe"
+          x-model="timeframe"
           hx-get="/events/results"
           hx-target="#event-results"
           hx-push-url="true"
           hx-trigger="change"
-          x-model="timeframe"
           hx-include="[name='search'],[name='category']"
           class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           x-bind:class="timeframe !== 'all' ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50 font-semibold text-blue-700' : ''"
