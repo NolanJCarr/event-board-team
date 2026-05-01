@@ -219,3 +219,141 @@ describe("RSVPService.toggleRSVP", () => {
     if(pos2.ok) expect(pos2.value).toBe(2);
   });
 });
+
+describe("RSVPService.getStatusForEvent", () => {
+  it("returns null when the user has no RSVP for the event", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+
+    const result = await service.getStatusForEvent(MEMBER, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBeNull();
+  });
+
+  it("returns 'going' after the user RSVPs to an event with capacity", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 10);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);
+
+    const result = await service.getStatusForEvent(MEMBER, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe("going");
+  });
+
+  it("returns 'waitlisted' when the event is full and the user is on the waitlist", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 1);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);   // fills the one spot
+    await service.toggleRSVP(MEMBER2, "evt-1", NOW);  // waitlisted
+
+    const result = await service.getStatusForEvent(MEMBER2, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe("waitlisted");
+  });
+
+  it("returns 'cancelled' after the user cancels their active RSVP", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 10);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);  // going
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);  // cancel
+
+    const result = await service.getStatusForEvent(MEMBER, "evt-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe("cancelled");
+  });
+});
+
+describe("RSVPService.getUserRSVPStatuses", () => {
+  it("returns an empty map when the user has no RSVPs", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+
+    const result = await service.getUserRSVPStatuses(MEMBER);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(Object.keys(result.value).length).toBe(0);
+  });
+
+  it("includes an event the user is going to", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 10);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);
+
+    const result = await service.getUserRSVPStatuses(MEMBER);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value["evt-1"]).toBe("going");
+  });
+
+  it("includes an event the user is waitlisted for", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 1);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);   // fills the spot
+    await service.toggleRSVP(MEMBER2, "evt-1", NOW);  // waitlisted
+
+    const result = await service.getUserRSVPStatuses(MEMBER2);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value["evt-1"]).toBe("waitlisted");
+  });
+
+  it("excludes events where the user has cancelled their RSVP", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([makeEvent({ id: "evt-1", startTime: FUTURE })]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 10);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);  // going
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);  // cancel
+
+    const result = await service.getUserRSVPStatuses(MEMBER);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value["evt-1"]).toBeUndefined();
+  });
+
+  it("returns statuses for multiple events", async () => {
+    const rsvpRepo = CreateInMemoryRSVPRepository();
+    const eventRepo = new InMemoryEventRepository();
+    eventRepo.seed([
+      makeEvent({ id: "evt-1", startTime: FUTURE }),
+      makeEvent({ id: "evt-2", startTime: FUTURE }),
+    ]);
+    const service = CreateRSVPService(rsvpRepo, eventRepo);
+    await service.registerEvent("evt-1", 1);
+    await service.registerEvent("evt-2", 10);
+    await service.toggleRSVP(MEMBER, "evt-1", NOW);   // going (fills it)
+    await service.toggleRSVP(MEMBER2, "evt-1", NOW);  // waitlisted on evt-1
+    await service.toggleRSVP(MEMBER2, "evt-2", NOW);  // going on evt-2
+
+    const result = await service.getUserRSVPStatuses(MEMBER2);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value["evt-1"]).toBe("waitlisted");
+      expect(result.value["evt-2"]).toBe("going");
+    }
+  });
+});

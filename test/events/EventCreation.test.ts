@@ -65,6 +65,7 @@ function buildApp(): Express {
   return CreateApp(
     authController,
     rsvpController,
+    rsvpService,
     eventController,
     attendeeListController,
     eventCreationController,

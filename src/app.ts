@@ -10,6 +10,7 @@ import {
 import type { UserRole } from "./auth/User";
 import { IApp } from "./contracts";
 import type { IRSVPController } from "./rsvp/RSVPController";
+import type { IRSVPService, RSVPOutcome } from "./service/RSVPService";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -45,6 +46,7 @@ class ExpressApp implements IApp {
     private readonly authController: IAuthController,
     // eventController was added so the app can have access to the events feature.
     private readonly rsvpController: IRSVPController,
+    private readonly rsvpService: IRSVPService,
     private readonly eventController: IEventController,
     private readonly attendeeListController: IAttendeeListController,
     private readonly eventCreationController: IEventCreationController,
@@ -259,8 +261,11 @@ class ExpressApp implements IApp {
       "/events",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
-        // A user must be logged in to see the events.
-        // It is handed to the event controller for the rest.
+        const user = getAuthenticatedUser(sessionStore(req));
+        if (user?.role === "user") {
+          const statusesResult = await this.rsvpService.getUserRSVPStatuses({ userId: user.userId, role: "user" });
+          if (statusesResult.ok) res.locals.rsvpStatuses = statusesResult.value;
+        }
         await this.eventController.showEvents(req, res, sessionStore(req));
       }),
     );
@@ -269,9 +274,14 @@ class ExpressApp implements IApp {
       "/events/results",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
+        const user = getAuthenticatedUser(sessionStore(req));
+        if (user?.role === "user") {
+          const statusesResult = await this.rsvpService.getUserRSVPStatuses({ userId: user.userId, role: "user" });
+          if (statusesResult.ok) res.locals.rsvpStatuses = statusesResult.value;
+        }
         await this.eventController.showEventsPartial(req, res, sessionStore(req));
-  }),
-);
+      }),
+    );
     this.app.get(
       "/events/new",
       asyncHandler(async (req, res) => {
@@ -309,8 +319,22 @@ class ExpressApp implements IApp {
             session: browserSession,
             event: null,
             pageError: error.message,
+            rsvpStatus: null,
           });
           return;
+        }
+
+        let rsvpStatus: RSVPOutcome | null = null;
+        if (user?.role === "user") {
+          const statusResult = await this.rsvpService.getStatusForEvent(
+            { userId: user.userId, role: "user" },
+            typeof req.params.id === "string" ? req.params.id : "",
+          );
+          if (statusResult.ok) {
+            rsvpStatus = statusResult.value;
+          } else {
+            this.logger.warn(`getStatusForEvent failed for user ${user.userId}: ${(statusResult.value as any).message}`);
+          }
         }
 
         if (this.isHtmxRequest(req)) {
@@ -325,6 +349,7 @@ class ExpressApp implements IApp {
           session: browserSession,
           event: result.value,
           pageError: null,
+          rsvpStatus,
         });
       }),
     );
@@ -493,6 +518,7 @@ class ExpressApp implements IApp {
 export function CreateApp(
   authController: IAuthController,
   rsvpController: IRSVPController,
+  rsvpService: IRSVPService,
   eventController: IEventController,
   attendeeListController: IAttendeeListController,
   eventCreationController: IEventCreationController,
@@ -501,5 +527,5 @@ export function CreateApp(
   eventService: IEventService,
   dashboardService: IDashboardService,
 ): IApp {
-  return new ExpressApp(authController, rsvpController, eventController, attendeeListController, eventCreationController, eventEditingController, logger, eventService, dashboardService);
+  return new ExpressApp(authController, rsvpController, rsvpService, eventController, attendeeListController, eventCreationController, eventEditingController, logger, eventService, dashboardService);
 }
