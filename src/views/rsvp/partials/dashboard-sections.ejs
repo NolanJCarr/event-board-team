@@ -7,7 +7,8 @@
   <% } else { %>
     <div class="grid gap-4">
       <% dashboard.upcoming.forEach(function(entry) { %>
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+        <div class="bg-white rounded-lg shadow p-6 border border-gray-100"
+             x-data="{}" x-init="$el.style.cssText='opacity:0;transform:scale(0.95)'; requestAnimationFrame(() => { $el.style.cssText='opacity:1;transform:scale(1);transition:opacity 700ms ease-out,transform 700ms ease-out' })">
           <div class="flex items-start justify-between">
             <div>
               <h3 class="text-lg font-semibold text-gray-900"><%= entry.event.title %></h3>
@@ -16,9 +17,9 @@
             <div class="text-right">
               <span class="text-sm text-gray-400"><%= entry.event.startTime.toLocaleDateString() %></span>
               <% if (entry.rsvp.status === "waitlisted") { %>
-                <p class="text-xs text-yellow-600 font-medium mt-1">Waitlisted</p>
+                <p class="text-xs text-yellow-600 font-semibold mt-1">Waitlisted</p>
               <% } else { %>
-                <p class="text-xs text-green-600 font-medium mt-1">Going</p>
+                <p class="text-xs text-green-600 font-semibold mt-1">Going</p>
               <% } %>
             </div>
           </div>
@@ -30,7 +31,7 @@
             <button
               x-show="!confirming"
               @click="confirming = true"
-              class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+              class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700"
             >Cancel RSVP</button>
             <div x-show="confirming" class="flex items-center gap-3">
               <span class="text-sm text-gray-600">Are you sure?</span>
@@ -38,11 +39,11 @@
                 hx-post="/events/<%= entry.event.id %>/rsvp"
                 hx-target="#rsvp-sections"
                 hx-swap="innerHTML"
-                class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+                class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700"
               >Yes, cancel</button>
               <button
                 @click="confirming = false"
-                class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300"
+                class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-300"
               >Never mind</button>
             </div>
           </div>
@@ -61,7 +62,8 @@
   <% } else { %>
     <div class="grid gap-4">
       <% dashboard.pastAndCancelled.forEach(function(entry) { %>
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-100 opacity-75">
+        <div class="bg-white rounded-lg shadow p-6 border border-gray-100 opacity-75"
+             x-data="{}" x-init="$el.style.cssText='opacity:0;transform:scale(0.95)'; requestAnimationFrame(() => { $el.style.cssText='opacity:1;transform:scale(1);transition:opacity 700ms ease-out,transform 700ms ease-out' })">
           <div class="flex items-start justify-between">
             <div>
               <h3 class="text-lg font-semibold text-gray-700"><%= entry.event.title %></h3>
