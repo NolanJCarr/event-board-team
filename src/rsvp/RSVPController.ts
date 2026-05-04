@@ -69,8 +69,9 @@ class RSVPController implements IRSVPController {
         }
         return res.render("rsvp/partials/dashboard-sections", { dashboard: dashResult.value, layout: false });
       }
-      return res.render("event/partials/rsvp-feedback", {
+      return res.render("event/partials/rsvp-section", {
         rsvpStatus: result.value,
+        eventId,
         layout: false,
       });
     }

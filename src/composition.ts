@@ -156,6 +156,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   return CreateApp(
     authController,
     rsvpController,
+    rsvpService,
     eventController,
     attendeeListController,
     eventCreationController,
