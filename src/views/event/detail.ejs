@@ -53,18 +53,26 @@
         </div>                                                                                                                                                                                                  
       </div>
                                                                                                                                                                                                                 
-      <div class="mt-6">                                                                                                                                                                                        
-        <button
-          class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"                                                                                                                     
-          hx-get="/events/<%= event.id %>/attendees"
-          hx-target="#attendee-list"
-          hx-swap="innerHTML"                                                                                                                                                                                   
-        >
-          View Attendees                                                                                                                                                                                        
-        </button> 
-      </div>
+    <div x-data="{ open: false, loaded: false }" class="mt-6">
+      <button 
+        @click="open = !open"
+        class="px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-slate-900">
+        <span x-text="open ? 'Hide Attendees' : 'View Attendees'"></span>
+      </button>
 
-    <div id="attendee-list" class="mt-6"></div>
+      <div x-show="open">
+        <div
+          hx-get="/events/<%= event.id %>/attendees"
+          hx-trigger="intersect once"
+          hx-target="this"
+          hx-swap="innerHTML"
+        ></div>
+      </div>
+    </div>
+      
+  
+
+
 
     <% if (session?.authenticatedUser?.role === "user") { %>
       <div class="mt-6 flex items-center gap-4">
