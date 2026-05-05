@@ -53,18 +53,18 @@
         </div>                                                                                                                                                                                                  
       </div>
                                                                                                                                                                                                                 
-    <div x-data="{ open: false, loaded: false }" class="mt-6">
+    <div x-data="{ open: false}" class="mt-6">
       <button 
         @click="open = !open"
         class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
         <span x-text="open ? 'Hide Attendees' : 'View Attendees'"></span>
       </button>
 
-      <div x-show="open">
+      <div x-show="open" x-transition>
         <div
           hx-get="/events/<%= event.id %>/attendees"
           hx-trigger="intersect once"
-          hx-target="this"
+          hx-target ="this"
           hx-swap="innerHTML"
         ></div>
       </div>
