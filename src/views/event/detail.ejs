@@ -19,6 +19,7 @@
                                                                                                                                                                                                                 
       <p class="text-slate-600 mb-6"><%= event.description %></p>
 
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">                                                                                                                                               
         <div>
           <span class="font-semibold text-slate-700">Location:</span>                                                                                                                                           
@@ -70,9 +71,13 @@
       </div>
     </div>
       
-  
-
-
+    <% if (rsvpStatus === "waitlisted" && waitlistPosition != null){%>
+      <div class="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-yellow-100 border border-yellow-300 text-yellow-800 shadow-sm">
+        <span class="font-semibold">Waitlisted</span>
+        <span class="font-bold text-yellow-900">#<%= waitlistPosition %></span>
+        <span class="text-sem text-yellow-700">in queue</span>
+      </div>
+    <% } %>
 
     <% if (session?.authenticatedUser?.role === "user") { %>
       <div class="mt-6 flex items-center gap-4">
@@ -87,7 +92,6 @@
         <div id="rsvp-feedback-<%= event.id %>"></div>
       </div>
     <% } %>
-
   </section>
 <% } %>
 
