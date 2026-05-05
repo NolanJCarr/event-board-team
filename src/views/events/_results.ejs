@@ -8,19 +8,35 @@
       <p class="text-sm text-gray-500 mb-4"><%= events.length %> event(s) found</p>
       <div class="grid gap-4">
         <% events.forEach(function(event) { %>
-          <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
-            <div class="flex items-start justify-between">
-              <div>
+          <div
+            class="group relative bg-white rounded-lg shadow border border-gray-100 p-6 transition hover:shadow-lg hover:border-blue-200 has-[a.event-card-link:focus-visible]:ring-2 has-[a.event-card-link:focus-visible]:ring-blue-500 has-[a.event-card-link:focus-visible]:ring-offset-2 motion-reduce:transition-none"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0">
                 <h2 class="text-xl font-semibold text-gray-900">
-                  <a href="/events/<%= event.id %>" class="hover:text-blue-600 hover:underline">
+                  <a
+                    href="/events/<%= event.id %>"
+                    class="event-card-link before:content-[''] before:absolute before:inset-0 before:rounded-lg group-hover:text-blue-600 focus:outline-none"
+                  >
                     <%= event.title %>
                   </a>
                 </h2>
                 <p class="text-sm text-blue-600 mt-1 capitalize"><%= event.category %></p>
               </div>
-              <span class="text-sm text-gray-400">
-                <%= event.startTime.toLocaleDateString() %>
-              </span>
+              <div class="flex items-center gap-3 shrink-0">
+                <span class="text-sm text-gray-400">
+                  <%= event.startTime.toLocaleDateString() %>
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  class="w-5 h-5 text-gray-300 group-hover:text-blue-600 transition-colors motion-reduce:transition-none"
+                  aria-hidden="true"
+                >
+                  <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+                </svg>
+              </div>
             </div>
             <p class="text-gray-600 mt-3 text-sm"><%= event.description %></p>
             <div class="mt-4 text-sm text-gray-500 flex gap-6">
@@ -31,7 +47,9 @@
               <% } %>
             </div>
             <% if (session?.authenticatedUser?.role === 'user') { %>
-              <%- include('../event/partials/rsvp-section', { eventId: event.id, rsvpStatus: rsvpStatuses && rsvpStatuses[event.id] || null }) %>
+              <div class="relative z-10 mt-4">
+                <%- include('../event/partials/rsvp-section', { eventId: event.id, rsvpStatus: rsvpStatuses && rsvpStatuses[event.id] || null }) %>
+              </div>
             <% } %>
           </div>
         <% }) %>
