@@ -91,12 +91,13 @@ class AttendeeListController implements IAttendeeListController {
         `cancelled: ${result.value.cancelled.length})`,
     );
 
-    
-   const session = touchAppSession(store);
-   res.render("events/attendees", {
-    attendees: result.value,
-    session,
-  });
+    const session = touchAppSession(store);
+    res.locals.layout = false;
+    res.render("events/partials/attendees", {
+      attendees: result.value,
+      session,
+      layout: false,
+    });
   }
 }
 
