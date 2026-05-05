@@ -1,28 +1,86 @@
-<% function statusBadge(status) {
-  const map = {
-    draft: 'bg-yellow-100 text-yellow-800',
-    published: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800',
-    past: 'bg-gray-100 text-gray-600',
-  };
-  return map[status] || 'bg-slate-100 text-slate-600';
-} %>
-
-<% function renderSection(title, events) { %>
-  <section class="mb-8">
-    <h2 class="text-lg font-semibold text-slate-700 mb-3"><%= title %> <span class="text-slate-400 font-normal text-sm">(<%= events.length %>)</span></h2>
-    <% if (events.length === 0) { %>
-      <p class="text-slate-400 text-sm italic">No events.</p>
+<% function renderSection(title, events, opts) {
+  const variant = opts.variant;
+  const collapsible = opts.collapsible;
+  const v = {
+    primary:   { card: 'bg-white border-l-4 border-emerald-500',
+                 dot:  'bg-emerald-500',
+                 count:'bg-emerald-100 text-emerald-800' },
+    secondary: { card: 'bg-slate-50 border-l-4 border-amber-400',
+                 dot:  'bg-amber-400',
+                 count:'bg-amber-100 text-amber-800' },
+    muted:     { card: 'bg-slate-100 border-l-4 border-slate-300',
+                 dot:  'bg-slate-400',
+                 count:'bg-slate-200 text-slate-600' },
+  }[variant];
+  const slug = title.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const sectionId = 'section-' + slug;
+%>
+  <section
+    class="mb-6 rounded-r-xl <%= v.card %> p-5"
+    <% if (collapsible) { %>x-data="{ open: false }"<% } %>
+  >
+    <% if (collapsible) { %>
+      <button
+        type="button"
+        class="w-full flex items-center justify-between text-left cursor-pointer"
+        @click="open = !open"
+        :aria-expanded="open.toString()"
+        aria-controls="<%= sectionId %>"
+      >
+        <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2.5">
+          <span class="inline-block w-2.5 h-2.5 rounded-full <%= v.dot %>"></span>
+          <span><%= title %></span>
+          <span class="inline-flex items-center justify-center min-w-[1.5rem] px-2 py-0.5 text-xs font-medium rounded-full <%= v.count %>"><%= events.length %></span>
+        </h2>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-5 h-5 text-slate-500 transition-transform"
+          :class="{ 'rotate-180': open }"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div
+        id="<%= sectionId %>"
+        x-show="open"
+        x-cloak
+        x-transition.opacity
+        class="mt-4"
+      >
+        <% if (events.length === 0) { %>
+          <p class="text-slate-400 text-sm italic">No events.</p>
+        <% } else { %>
+          <ul class="space-y-3">
+            <% events.forEach(function(event) { %>
+              <%- include("dashboard-row", { event: event }) %>
+            <% }); %>
+          </ul>
+        <% } %>
+      </div>
     <% } else { %>
-      <ul class="space-y-3">
-        <% events.forEach(function(event) { %>
-          <%- include("dashboard-row", { event: event }) %>
-        <% }); %>
-      </ul>
+      <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2.5">
+        <span class="inline-block w-2.5 h-2.5 rounded-full <%= v.dot %>"></span>
+        <span><%= title %></span>
+        <span class="inline-flex items-center justify-center min-w-[1.5rem] px-2 py-0.5 text-xs font-medium rounded-full <%= v.count %>"><%= events.length %></span>
+      </h2>
+      <% if (events.length === 0) { %>
+        <p class="text-slate-400 text-sm italic">No events.</p>
+      <% } else { %>
+        <ul class="space-y-3">
+          <% events.forEach(function(event) { %>
+            <%- include("dashboard-row", { event: event }) %>
+          <% }); %>
+        </ul>
+      <% } %>
     <% } %>
   </section>
 <% } %>
 
-<%- renderSection("Published", dashboard.published) %>
-<%- renderSection("Draft", dashboard.draft) %>
-<%- renderSection("Past & Cancelled", dashboard.pastOrCancelled) %>
+<%- renderSection("Published",        dashboard.published,       { variant: 'primary',   collapsible: false }) %>
+<%- renderSection("Draft",            dashboard.draft,           { variant: 'secondary', collapsible: false }) %>
+<%- renderSection("Past & Cancelled", dashboard.pastOrCancelled, { variant: 'muted',     collapsible: true  }) %>
