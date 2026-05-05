@@ -96,6 +96,7 @@ class AttendeeListController implements IAttendeeListController {
    res.render("events/attendees", {
     attendees: result.value,
     session,
+    layout: false,
   });
   }
 }
