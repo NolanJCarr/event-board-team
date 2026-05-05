@@ -1,107 +1,96 @@
-<style>[x-cloak]{display:none!important}</style>
-
 <% if (pageError) { %>
-  <%- include("../partials/error", { message: pageError }) %>
-<% } %>
-
-<%
-function formatDateLong(d) {
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-}
-function formatTimeShort(d) {
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
-%>
-
-<% if (event) { %>
-  <section
-    class="mb-5 border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden"
-    x-data="{
-      relative(iso) {
-        const target = new Date(iso).getTime();
-        const now = Date.now();
-        const diffMs = target - now;
-        const abs = Math.abs(diffMs);
-        const minute = 60000, hour = 3600000, day = 86400000;
-        const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-        if (abs < hour)      return rtf.format(Math.round(diffMs / minute), 'minute');
-        if (abs < day)       return rtf.format(Math.round(diffMs / hour),   'hour');
-        if (abs < 30 * day)  return rtf.format(Math.round(diffMs / day),    'day');
-        if (abs < 365 * day) return rtf.format(Math.round(diffMs / (30 * day)), 'month');
-        return rtf.format(Math.round(diffMs / (365 * day)), 'year');
-      }
-    }"
-  >
-    <header class="px-6 pt-6 pb-5 border-b border-slate-100">
-      <div class="flex items-start justify-between gap-4">
-        <h1 class="text-3xl font-bold text-slate-900 leading-tight"><%= event.title %></h1>
+    <%- include("../partials/error", { message: pageError }) %>                                                                                                                                                 
+  <% } %>                                                                                                                                                                                                       
+                                                                                                                                                                                                                
+  <% if (event) { %>                                                                                                                                                                                            
+    <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+      <div class="flex items-start justify-between mb-4">
+        <h1 class="text-3xl font-bold text-slate-900"><%= event.title %></h1>                                                                                                                                   
         <% if (event.status === "draft") { %>
-          <span class="shrink-0 inline-block px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">Draft</span>
-        <% } else if (event.status === "published") { %>
-          <span class="shrink-0 inline-block px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">Published</span>
-        <% } else if (event.status === "cancelled") { %>
-          <span class="shrink-0 inline-block px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">Cancelled</span>
-        <% } else if (event.status === "past") { %>
-          <span class="shrink-0 inline-block px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-600">Past</span>
-        <% } %>
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">Draft</span>                                                                                      
+        <% } else if (event.status === "published") { %>                                                                                                                                                        
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">Published</span>
+        <% } else if (event.status === "cancelled") { %>                                                                                                                                                        
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">Cancelled</span>
+        <% } else if (event.status === "past") { %>                                                                                                                                                             
+          <span class="inline-block px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-600">Past</span>
+        <% } %>                                                                                                                                                                                                 
+      </div>      
+                                                                                                                                                                                                                
+      <p class="text-slate-600 mb-6"><%= event.description %></p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">                                                                                                                                               
+        <div>
+          <span class="font-semibold text-slate-700">Location:</span>                                                                                                                                           
+          <span class="text-slate-600 ml-1"><%= event.location %></span>
+        </div>                                                                                                                                                                                                  
+   
+        <div>                                                                                                                                                                                                   
+          <span class="font-semibold text-slate-700">Category:</span>
+          <span class="text-slate-600 ml-1"><%= event.category %></span>
+        </div>
+
+        <div>                                                                                                                                                                                                   
+          <span class="font-semibold text-slate-700">Start:</span>
+          <span class="text-slate-600 ml-1"><%= event.startTime.toLocaleDateString() %> at <%= event.startTime.toLocaleTimeString() %></span>                                                                   
+        </div>                                                                                                                                                                                                  
+   
+        <div>                                                                                                                                                                                                   
+          <span class="font-semibold text-slate-700">End:</span>
+          <span class="text-slate-600 ml-1"><%= event.endTime.toLocaleDateString() %> at <%= event.endTime.toLocaleTimeString() %></span>
+        </div>                                                                                                                                                                                                  
+   
+        <% if (event.capacity != null) { %>                                                                                                                                                                     
+          <div>   
+            <span class="font-semibold text-slate-700">Capacity:</span>
+            <span class="text-slate-600 ml-1"><%= event.capacity %></span>                                                                                                                                      
+          </div>
+        <% } %>                                                                                                                                                                                                 
+                  
+        <div>
+          <span class="font-semibold text-slate-700">Status:</span>
+          <span class="text-slate-600 ml-1"><%= event.status.charAt(0).toUpperCase() + event.status.slice(1) %></span>
+        </div>                                                                                                                                                                                                  
       </div>
-    </header>
+                                                                                                                                                                                                                
+    <div x-data="{ open: false}" class="mt-6">
+      <button 
+        @click="open = !open"
+        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+        <span x-text="open ? 'Hide Attendees' : 'View Attendees'"></span>
+      </button>
 
-    <div class="px-6 py-5 border-b border-slate-100">
-      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">When</p>
-      <p class="text-lg text-slate-900">
-        <span class="font-medium"><%= formatDateLong(event.startTime) %></span>
-        <span class="text-slate-500">·</span>
-        <span><%= formatTimeShort(event.startTime) %></span>
-        <span x-cloak class="text-slate-500 ml-1" x-text="'(' + relative('<%= event.startTime.toISOString() %>') + ')'"></span>
-      </p>
-      <p class="text-sm text-slate-600 mt-1">
-        Ends <%= formatDateLong(event.endTime) %> at <%= formatTimeShort(event.endTime) %>
-        <span x-cloak class="text-slate-400 ml-1" x-text="'(' + relative('<%= event.endTime.toISOString() %>') + ')'"></span>
-      </p>
+      <div x-show="open" x-transition>
+        <div
+          hx-get="/events/<%= event.id %>/attendees"
+          hx-trigger="intersect once"
+          hx-target ="this"
+          hx-swap="innerHTML"
+        ></div>
+      </div>
     </div>
+      
+  
 
-    <div class="px-6 py-5 border-b border-slate-100">
-      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Where</p>
-      <p class="text-lg text-slate-900">📍 <%= event.location %></p>
-    </div>
 
-    <% if (event.description) { %>
-      <div class="px-6 py-5 border-b border-slate-100">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">About</p>
-        <p class="text-base text-slate-700 leading-relaxed max-w-prose"><%= event.description %></p>
+
+    <% if (session?.authenticatedUser?.role === "user") { %>
+      <div class="mt-6 flex items-center gap-4">
+        <button
+          hx-post="/events/<%= event.id %>/rsvp"
+          hx-target="#rsvp-feedback-<%= event.id %>"
+          hx-swap="innerHTML"
+          class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+        >
+          RSVP
+        </button>
+        <div id="rsvp-feedback-<%= event.id %>"></div>
       </div>
     <% } %>
 
-    <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-      <span><span class="font-semibold text-slate-700">Category:</span> <span class="capitalize"><%= event.category %></span></span>
-      <% if (event.capacity != null) { %>
-        <span><span class="font-semibold text-slate-700">Capacity:</span> <%= event.capacity %></span>
-      <% } %>
-      <span><span class="font-semibold text-slate-700">Status:</span> <%= event.status.charAt(0).toUpperCase() + event.status.slice(1) %></span>
-    </div>
-
-    <div class="px-6 py-5">
-      <button
-        class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
-        hx-get="/events/<%= event.id %>/attendees"
-        hx-target="#attendee-list"
-        hx-swap="innerHTML"
-      >
-        View Attendees
-      </button>
-
-      <div id="attendee-list" class="mt-6"></div>
-
-      <% if (session?.authenticatedUser?.role === "user") { %>
-        <div class="mt-6">
-          <%- include("partials/rsvp-section", { eventId: event.id, rsvpStatus }) %>
-        </div>
-      <% } %>
-    </div>
   </section>
 <% } %>
 
-<div class="mt-4">
-  <a href="/home" class="text-blue-600 hover:text-blue-800 font-medium text-sm">&larr; Back to Home</a>
-</div>
+  <div class="mt-4">                                                                                                                                                                                            
+    <a href="/home" class="text-blue-600 hover:text-blue-800 font-medium text-sm">&larr; Back to Home</a>
+  </div>

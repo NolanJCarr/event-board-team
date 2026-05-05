@@ -93,7 +93,7 @@ class AttendeeListController implements IAttendeeListController {
 
     
    const session = touchAppSession(store);
-   res.render("events/attendees", {
+   res.render("events/partials/attendees", {
     attendees: result.value,
     session,
     layout: false,
