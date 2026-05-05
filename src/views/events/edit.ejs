@@ -28,7 +28,48 @@
   <% } %>
 
   <!-- Event Editing Form -->
-  <form method="POST" action="/events/<%= event.id %>" class="bg-white rounded-lg shadow p-6">
+  <div x-data="{
+    hasUnsavedChanges: false,
+    isSubmitting: false,
+    titleCount: '<%= event.title.length %>',
+    descriptionCount: '<%= event.description.length %>',
+    originalValues: {
+      title: `<%= event.title.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      description: `<%= event.description.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      location: `<%= event.location.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      category: '<%= event.category %>',
+      startTime: '<%= startTimeFormatted %>',
+      endTime: '<%= endTimeFormatted %>',
+      capacity: '<%= event.capacity !== undefined ? event.capacity : "" %>'
+    },
+    checkForChanges() {
+      const form = $refs.editForm;
+      if (!form) return;
+      const currentValues = {
+        title: form.title.value,
+        description: form.description.value,
+        location: form.location.value,
+        category: form.category.value,
+        startTime: form.startTime.value,
+        endTime: form.endTime.value,
+        capacity: form.capacity.value
+      };
+      this.hasUnsavedChanges = JSON.stringify(currentValues) !== JSON.stringify(this.originalValues);
+    },
+    confirmCancel(event) {
+      if (this.hasUnsavedChanges) {
+        if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+          event.preventDefault();
+        } else {
+          // User confirmed - disable warning for this navigation
+          this.hasUnsavedChanges = false;
+        }
+      }
+    }
+  }"
+  x-init="window.addEventListener('beforeunload', (e) => { if ($data.hasUnsavedChanges && !$data.isSubmitting) { e.preventDefault(); e.returnValue = ''; } })"
+  >
+  <form x-ref="editForm" method="POST" action="/events/<%= event.id %>" class="bg-white rounded-lg shadow p-6" @input="checkForChanges()" @change="checkForChanges()" @submit="isSubmitting = true">
 
     <!-- Title -->
     <div class="mb-4">
@@ -45,8 +86,11 @@
         placeholder="e.g., Spring Hackathon 2026"
         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         aria-describedby="title-help"
+        x-on:input="titleCount = $event.target.value.length"
       />
-      <p id="title-help" class="text-xs text-gray-500 mt-1">Maximum 200 characters</p>
+      <p id="title-help" class="text-xs mt-1" :class="titleCount > 180 ? 'text-orange-600 font-medium' : titleCount > 195 ? 'text-red-600 font-semibold' : 'text-gray-500'">
+        <span x-text="titleCount"></span> / 200 characters
+      </p>
     </div>
 
     <!-- Description -->
@@ -63,8 +107,11 @@
         placeholder="Describe your event..."
         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         aria-describedby="description-help"
+        x-on:input="descriptionCount = $event.target.value.length"
       ><%= event.description %></textarea>
-      <p id="description-help" class="text-xs text-gray-500 mt-1">Maximum 2000 characters</p>
+      <p id="description-help" class="text-xs mt-1" :class="descriptionCount > 1800 ? 'text-orange-600 font-medium' : descriptionCount > 1950 ? 'text-red-600 font-semibold' : 'text-gray-500'">
+        <span x-text="descriptionCount"></span> / 2000 characters
+      </p>
     </div>
 
     <!-- Location -->
@@ -176,6 +223,7 @@
         href="/events/<%= event.id %>"
         class="flex-1 text-center bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
         aria-label="Cancel editing and return to event details"
+        @click="confirmCancel($event)"
       >
         Cancel
       </a>
@@ -200,4 +248,5 @@
       <% } %>
     </div>
   </form>
+  </div>
 </div>

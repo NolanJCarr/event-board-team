@@ -86,6 +86,7 @@ function buildAppWithEvents(events: Event[]): BuiltApp {
   const app = CreateApp(
     authController,
     rsvpController,
+    rsvpService,
     eventController,
     attendeeListController,
     eventCreationController,
