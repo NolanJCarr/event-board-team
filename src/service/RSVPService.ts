@@ -255,21 +255,20 @@ class RSVPService implements IRSVPService {
     return Ok(map);
   }
   
-  async getWaitlistPosition(actor: RSVPActor, eventId: string): Promise<Result<number | null, RSVPError>> {
+  async getWaitlistPosition(actor: RSVPActor, eventId: string) {
     const result = await this.repository.findAllByEvent(eventId);
 
-    if (result.ok === false){
-      return Err(UnexpectedDependencyError(result.value.message));
+    if (!result.ok) {
+      return Err(UnexpectedDependencyError("Failed to load waitlist"));
     }
 
-    const waitlisted = result.value
+    const waitlist = result.value
     .filter(r => r.status === "waitlisted")
-    .sort((a,b) => a.createdAt.getTime() - b.createdAt.getTime());
-
-    const index = waitlisted.findIndex(r => r.userId === actor.userId)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const index = waitlist.findIndex(r => r.userId === actor.userId);
 
     return Ok(index === -1 ? null : index + 1);
-    
+  
   }
 }
 

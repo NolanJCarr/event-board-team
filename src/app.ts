@@ -337,6 +337,17 @@ class ExpressApp implements IApp {
           }
         }
 
+        let waitlistPosition: number | null = null;
+        if (rsvpStatus === "waitlisted") {
+          const positionResult = await this.rsvpService.getWaitlistPosition(
+          { userId: user!.userId, role: "user" },
+          typeof req.params.id === "string" ? req.params.id : "",
+        );
+        if (positionResult.ok) {
+          waitlistPosition = positionResult.value;
+        }
+        }
+
         if (this.isHtmxRequest(req)) {
           return res.render("event/partials/event-detail", {
             event: result.value,
@@ -350,6 +361,7 @@ class ExpressApp implements IApp {
           event: result.value,
           pageError: null,
           rsvpStatus,
+          waitlistPosition,
         });
       }),
     );
