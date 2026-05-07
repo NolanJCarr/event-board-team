@@ -54,8 +54,9 @@
         </div>                                                                                                                                                                                                  
       </div>
                                                                                                                                                                                                                 
+    <% if (session?.authenticatedUser?.role !== "user") { %>
     <div x-data="{ open: false}" class="mt-6">
-      <button 
+      <button
         @click="open = !open"
         class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
         <span x-text="open ? 'Hide Attendees' : 'View Attendees'"></span>
@@ -70,6 +71,7 @@
         ></div>
       </div>
     </div>
+    <% } %>
       
     <% if (rsvpStatus === "waitlisted"){%>
       <div class="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-yellow-100 border border-yellow-300 text-yellow-800 shadow-sm">
