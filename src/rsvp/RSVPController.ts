@@ -71,9 +71,9 @@ class RSVPController implements IRSVPController {
       }
 
       let waitlistPosition: number | null = null;
-      if (result.value === "waitlisted"){
+      if (result.ok === true && result.value === "waitlisted"){
         const positionResult = await this.rsvpService.getWaitlistPosition(person, eventId);
-        
+        console.log("WAITLIST POSITION RESULT:", positionResult);
         if (positionResult.ok){
           waitlistPosition = positionResult.value;
         }
