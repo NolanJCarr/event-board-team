@@ -60,6 +60,8 @@ export interface IRSVPService {
    * is currently going or waitlisted. Used to pre-load button states on the events list.
    */
   getUserRSVPStatuses(actor: RSVPActor): Promise<Result<Record<string, RSVPOutcome>, RSVPError>>;
+
+  getWaitlistPosition(actor:RSVPActor, eventId: string): Promise<Result<number | null, RSVPError>>;
 }
 
 class RSVPService implements IRSVPService {
@@ -251,6 +253,23 @@ class RSVPService implements IRSVPService {
       }
     }
     return Ok(map);
+  }
+  
+  async getWaitlistPosition(actor: RSVPActor, eventId: string): Promise<Result<number | null, RSVPError>> {
+    const result = await this.repository.findAllByEvent(eventId);
+
+    if (result.ok === false){
+      return Err(UnexpectedDependencyError(result.value.message));
+    }
+
+    const waitlisted = result.value
+    .filter(r => r.status === "waitlisted")
+    .sort((a,b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    const index = waitlisted.findIndex(r => r.userId === actor.userId)
+
+    return Ok(index === -1 ? null : index + 1);
+    
   }
 }
 
