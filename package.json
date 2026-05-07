@@ -4,6 +4,7 @@
   "description": "A starter application with authentication and authorization for team projects.",
   "main": "index.js",
   "scripts": {
+    "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('.env'))fs.copyFileSync('.env.example','.env')\" && prisma generate && prisma migrate deploy",
     "dev": "npm run build && node dist/server.js",
     "build": "tsc --outDir dist -m nodenext -t es2024 --esModuleInterop src/app.ts src/server.ts",
     "test": "jest --runInBand",

@@ -1,7 +1,7 @@
 import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
 import { CreateAuthService } from "./auth/AuthService"
-import { CreateInMemoryUserRepository } from "./repository/InMemoryUserRepository";
+import { CreateInMemoryUserRepository, DEMO_USERS } from "./repository/InMemoryUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
 import type { IApp } from "./contracts";
@@ -108,6 +108,17 @@ export function createComposedApp(logger?: ILoggingService): IApp {
 
   // Shared event repository — now using Prisma for persistence
   const sharedEventRepository = new PrismaEventRepository(prisma);
+
+  // Seed demo users into Prisma so the RSVP FK constraint (RSVP.userId → User.id) is satisfied.
+  void Promise.all(
+    DEMO_USERS.map((u) =>
+      prisma.user.upsert({
+        where: { id: u.id },
+        update: {},
+        create: { id: u.id, email: u.email, displayName: u.displayName },
+      })
+    )
+  ).catch((err) => resolvedLogger.error(`Demo user seed failed: ${err}`));
 
   // Seed demo events into Prisma so detail pages resolve for known IDs.
   // Upsert is idempotent — safe to run on every startup.

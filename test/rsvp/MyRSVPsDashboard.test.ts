@@ -144,8 +144,8 @@ describe("RSVPService.getMyRSVPs", () => {
     const service = CreateRSVPService(rsvpRepo, eventRepo);
     await service.registerEvent("evt-soon", 10);
     await service.registerEvent("evt-later", 10);
-    await service.toggleRSVP(MEMBER, "evt-later");
-    await service.toggleRSVP(MEMBER, "evt-soon");
+    await service.toggleRSVP(MEMBER, "evt-later", NOW);
+    await service.toggleRSVP(MEMBER, "evt-soon", NOW);
 
     const result = await service.getMyRSVPs(MEMBER, NOW);
 
