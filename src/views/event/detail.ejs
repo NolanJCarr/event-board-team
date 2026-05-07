@@ -71,11 +71,15 @@
       </div>
     </div>
       
-    <% if (rsvpStatus === "waitlisted" && waitlistPosition != null){%>
+    <% if (rsvpStatus === "waitlisted"){%>
       <div class="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-yellow-100 border border-yellow-300 text-yellow-800 shadow-sm">
         <span class="font-semibold">Waitlisted</span>
-        <span class="font-bold text-yellow-900">#<%= waitlistPosition %></span>
-        <span class="text-sem text-yellow-700">in queue</span>
+        
+        <% if (typeof waitlistPosition !== "undefined" && waitlistPosition !== null) { %>
+          <span class="font-bold text-yellow-900">#<%= waitlistPosition %></span>
+          <span class="text-sem text-yellow-700">in queue</span>
+        <% } %>
+        
       </div>
     <% } %>
 
