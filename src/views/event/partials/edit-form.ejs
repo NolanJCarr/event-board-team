@@ -1,4 +1,42 @@
-<div id="event-detail" class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+<div id="event-detail" class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg" x-data="{
+    hasUnsavedChanges: false,
+    isSubmitting: false,
+    titleCount: '<%= event.title.length %>',
+    descriptionCount: '<%= event.description.length %>',
+    originalValues: {
+      title: `<%= event.title.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      description: `<%= event.description.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      location: `<%= event.location.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\') %>`,
+      category: '<%= event.category %>',
+      startTime: '<%= startTimeFormatted %>',
+      endTime: '<%= endTimeFormatted %>',
+      capacity: '<%= event.capacity !== undefined ? event.capacity : "" %>'
+    },
+    checkForChanges() {
+      const form = $refs.editForm;
+      if (!form) return;
+      const currentValues = {
+        title: form.title.value,
+        description: form.description.value,
+        location: form.location.value,
+        category: form.category.value,
+        startTime: form.startTime.value,
+        endTime: form.endTime.value,
+        capacity: form.capacity.value
+      };
+      this.hasUnsavedChanges = JSON.stringify(currentValues) !== JSON.stringify(this.originalValues);
+    },
+    confirmCancel(event) {
+      if (this.hasUnsavedChanges) {
+        if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+          event.preventDefault();
+        } else {
+          // User confirmed - disable warning for this navigation
+          this.hasUnsavedChanges = false;
+        }
+      }
+    }
+  }">
   <h2 class="text-2xl font-bold text-slate-900 mb-4">Edit Event</h2>
 
   <% if (pageError) { %>
@@ -8,21 +46,33 @@
   <% } %>
 
   <form
+    x-ref="editForm"
     hx-post="/events/<%= event.id %>"
     hx-target="#event-detail"
     hx-swap="outerHTML"
     class="space-y-4"
+    @input="checkForChanges()"
+    @change="checkForChanges()"
+    @submit="isSubmitting = true"
   >
     <div>
       <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
       <input type="text" id="title" name="title" required maxlength="200" value="<%= event.title %>"
-        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        x-on:input="titleCount = $event.target.value.length" />
+      <p class="text-xs mt-1" :class="titleCount > 180 ? 'text-orange-600 font-medium' : titleCount > 195 ? 'text-red-600 font-semibold' : 'text-gray-500'">
+        <span x-text="titleCount"></span> / 200 characters
+      </p>
     </div>
 
     <div>
       <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
       <textarea id="description" name="description" required maxlength="2000" rows="4"
-        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"><%= event.description %></textarea>
+        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        x-on:input="descriptionCount = $event.target.value.length"><%= event.description %></textarea>
+      <p class="text-xs mt-1" :class="descriptionCount > 1800 ? 'text-orange-600 font-medium' : descriptionCount > 1950 ? 'text-red-600 font-semibold' : 'text-gray-500'">
+        <span x-text="descriptionCount"></span> / 2000 characters
+      </p>
     </div>
 
     <div>
@@ -74,7 +124,8 @@
         hx-get="/events/<%= event.id %>"
         hx-target="#event-detail"
         hx-swap="outerHTML"
-        class="flex-1 bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+        class="flex-1 bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+        @click="confirmCancel($event)">
         Cancel
       </button>
     </div>

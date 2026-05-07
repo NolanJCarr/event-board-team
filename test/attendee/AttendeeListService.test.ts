@@ -1,111 +1,203 @@
 import { CreateAttendeeListService } from "../../src/service/AttendeeListService";
+import { CreateAttendeeListController } from "../../src/attendee/AttendeeListController";
+import { CreateInMemoryRSVPRepository } from "../../src/repository/InMemoryRSVPRepository";
 import {Ok} from "../../src/lib/result";
+import express from "express";
+import request from "supertest";
 
-const mockEventRepo = {findById: jest.fn()};
+// ── In-memory repositories ───────────────────────────────────────────
 
-const mockRSVPRepo = {findAllByEvent: jest.fn()};
+class InMemoryEventRepo {
+  constructor(private readonly event: any) {}
 
-const mockUserRepo = {findById: jest.fn()};
+  async findById(id: string) {
+    return this.event.id === id ? this.event : null;
+  }
+}
 
-const service = CreateAttendeeListService(
-    mockEventRepo as any,
-    mockRSVPRepo as any,
-    mockUserRepo as any
-);
+class InMemoryUserRepo {
+  constructor(private readonly users: Record<string, any>) {}
 
-//Authorized Access
+  async findById(id: string) {
+    const user = this.users[id];
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return Ok(user);
+  }
+}
 
-test("returns attendee list for organizer", async() => {
-    mockEventRepo.findById.mockResolvedValue({
-        id: "event1",
-        organizerId: "user1",
-    });
-    mockRSVPRepo.findAllByEvent.mockResolvedValue(
-        Ok([
-            {userId:"u1", status: "going", createdAt: new Date("2024-03-05")}
-        ])
-    );
-    mockUserRepo.findById.mockResolvedValue(
-        Ok({id: "u1", displayName: "Alice"})
-    );
-    const result = await service.getAttendeeList("event1",{
+// ── Fake logger ─────────────────────────────────────────────────────
+
+const logger = {
+  info() {},
+  warn() {},
+  error() {},
+};
+
+// ── Helper app factory ──────────────────────────────────────────────
+
+function createApp({
+  event,
+  rsvps,
+  users,
+}: {
+  event: any;
+  rsvps: any[];
+  users: Record<string, any>;
+}) {
+    const app = express();
+    const eventRepo = new InMemoryEventRepo(event);
+    const userRepo = new InMemoryUserRepo(users);
+    const rsvpRepo = CreateInMemoryRSVPRepository();   
+    
+    for (const rsvp of rsvps) {
+      rsvpRepo.saveRSVP({
+        ...rsvp,
+        eventId: event.id,
+      });
+    }
+
+  const service = CreateAttendeeListService(
+    eventRepo as any,
+    rsvpRepo as any,
+    userRepo as any,
+  );
+
+  const controller = CreateAttendeeListController(
+    service,
+    logger as any,
+  );
+
+  app.get("/events/:eventId/attendees", async (req, res) => {
+  const fakeStore = {
+    app: {
+      browserId: "browser-1",
+      browserLabel: "Browser TEST",
+      visitCount: 1,
+      createdAt: new Date().toISOString(),
+      lastSeenAt: new Date().toISOString(),
+      authenticatedUser: {
         userId: "user1",
+        email: "user1@example.com",
+        displayName: "Organizer",
         role: "user",
-    });
-    expect(result.ok).toBe(true);
-    if (result.ok === false){
-        throw new Error("Expected success but got error");
-    }
-    expect(result.value.attending.length).toBe(1);
+        signedInAt: new Date().toISOString(),
+      },
+    },
+  };
+
+  
+  res.render = (view: string, data: any) => {
+    res.status(200).send(JSON.stringify(data.attendees));
+    return res;
+  };
+
+  await controller.getAttendeeList(req, res, fakeStore as any);
 });
 
-// Unauthorized Access
-test("rejects non-organizer or non-admin", async() =>{
-    mockEventRepo.findById.mockResolvedValue({
-        id: "event1",
-        organizerId:"owner",
-    });
-    const result = await service.getAttendeeList("event1",{
-        userId: "randomUser",
-        role: "user",
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok){
-        expect(result.value.name).toBe("AttendeeListForbiddenError");
-    }
+  return app;
+}
+
+// ── Tests ───────────────────────────────────────────────────────────
+
+test("returns attendee list for organizer", async () => {
+  const app = createApp({
+    event: {
+      id: "event1",
+      organizerId: "user1",
+    },
+    rsvps: [
+      {
+        userId: "u1",
+        status: "going",
+        createdAt: new Date("2024-03-05"),
+      },
+    ],
+    users: {
+      u1: {
+        id: "u1",
+        displayName: "Alice",
+      },
+    },
+  });
+
+  const res = await request(app)
+    .get("/events/event1/attendees");
+
+  expect(res.status).toBe(200);
+  expect(res.text).toContain("Alice");
 });
 
-//Grouping
-test("groups attendees by status", async() => {
-    mockEventRepo.findById.mockResolvedValue({
-        id: "event1",
-        organizerId: "user1",
-    });
+test("rejects non-organizer", async () => {
+  const eventRepo = new InMemoryEventRepo({
+    id: "event1",
+    organizerId: "owner",
+  });
 
-    mockRSVPRepo.findAllByEvent.mockResolvedValue(
-        Ok([
-            { userId: "u1", status: "going", createdAt: new Date() },
-            { userId: "u2", status: "waitlisted", createdAt: new Date() },
-            { userId: "u3", status: "cancelled", createdAt: new Date() },
-        ])
-    );
+  const rsvpRepo = CreateInMemoryRSVPRepository();
+  const userRepo = new InMemoryUserRepo({});
 
-    mockUserRepo.findById.mockImplementation((id: string) =>
-        Promise.resolve(Ok({ id, displayName: id }))
-    );
+  const service = CreateAttendeeListService(
+    eventRepo as any,
+    rsvpRepo as any,
+    userRepo as any,
+  );
 
-    const result = await service.getAttendeeList("event1",{
-        userId: "user1",
-        role: "user",
-    });
+  const result = await service.getAttendeeList("event1", {
+    userId: "randomUser",
+    role: "user",
+  });
 
-    expect(result.ok).toBe(true);
+  expect(result.ok).toBe(false);
 
-    if (!result.ok) {
-        throw new Error("Expected success but got error");
-    }
-
-    expect(result.value.attending.length).toBe(1);
-    expect(result.value.waitlisted.length).toBe(1);
-    expect(result.value.cancelled.length).toBe(1);
+  if (!result.ok) {
+    expect(result.value.name).toBe("AttendeeListForbiddenError");
+  }
 });
 
-//Sorting
-test("sorts attendees by RSVP time ascending", async () => {
-  mockEventRepo.findById.mockResolvedValue({
+test("groups attendees by status", async () => {
+  const eventRepo = new InMemoryEventRepo({
     id: "event1",
     organizerId: "user1",
   });
 
-  mockRSVPRepo.findAllByEvent.mockResolvedValue(
-    Ok([
-      { userId: "u1", status: "going", createdAt: new Date("2024-05-05") },
-      { userId: "u2", status: "going", createdAt: new Date("2024-04-01") },
-    ])
-  );
+  const userRepo = new InMemoryUserRepo({
+    u1: { id: "u1", displayName: "u1" },
+    u2: { id: "u2", displayName: "u2" },
+    u3: { id: "u3", displayName: "u3" },
+  });
 
-  mockUserRepo.findById.mockImplementation(( id: string ) =>
-    Promise.resolve(Ok({ id, displayName: id }))
+  const rsvpRepo = CreateInMemoryRSVPRepository();
+  
+  await rsvpRepo.saveRSVP({
+    id: "rsvp1",
+    userId: "u1" ,
+    eventId: "event1" ,
+    status: "going" ,
+    createdAt: new Date() ,
+  });
+
+  await rsvpRepo.saveRSVP({
+    id: "rsvp2",
+    userId: "u2" ,
+    eventId: "event1" ,
+    status: "waitlisted" ,
+    createdAt: new Date() ,
+  });
+
+  await rsvpRepo.saveRSVP({
+    id: "rsvp3",
+    userId: "u3" ,
+    eventId: "event1" ,
+    status: "cancelled" ,
+    createdAt: new Date() ,
+  });
+
+  const service = CreateAttendeeListService(
+    eventRepo as any,
+    rsvpRepo as any,
+    userRepo as any,
   );
 
   const result = await service.getAttendeeList("event1", {
@@ -114,12 +206,66 @@ test("sorts attendees by RSVP time ascending", async () => {
   });
 
   expect(result.ok).toBe(true);
-  
-  if (!result.ok) {
-        throw new Error("Expected success but got error");
-    }
 
-  const attending = result.value.attending;
-  expect(attending[0].userId).toBe("u2"); // earlier date first
-  expect(attending[1].userId).toBe("u1");
+  if (!result.ok) {
+    throw new Error("Expected success");
+  }
+
+  expect(result.value.attending.length).toBe(1);
+  expect(result.value.waitlisted.length).toBe(1);
+  expect(result.value.cancelled.length).toBe(1);
+});
+
+test("sorts attendees by RSVP time ascending", async () => {
+  const eventRepo = new InMemoryEventRepo({
+    id: "event1",
+    organizerId: "user1",
+  });
+
+const userRepo = new InMemoryUserRepo({
+    u1: { id: "u1", displayName: "u1" },
+    u2: { id: "u2", displayName: "u2" },
+});
+
+const rsvpRepo = CreateInMemoryRSVPRepository();
+
+const older = new Date("2024-04-01T10:00:00.000Z");
+const newer = new Date("2024-05-05T10:00:00.000Z");
+
+await rsvpRepo.saveRSVP({
+    id: "rsvp1",
+    userId: "u1",
+    eventId: "event1",
+    status: "going",
+    createdAt: newer,
+});
+
+await rsvpRepo.saveRSVP({
+    id: "rsvp2",
+    userId: "u2",
+    eventId: "event1",
+    status: "going",
+    createdAt: older,
+    });
+
+
+  const service = CreateAttendeeListService(
+    eventRepo as any,
+    rsvpRepo as any,
+    userRepo as any,
+  );
+
+  const result = await service.getAttendeeList("event1", {
+    userId: "user1",
+    role: "admin",
+  });
+
+  expect(result.ok).toBe(true);
+
+  if (!result.ok) {
+    throw new Error("Expected success");
+  }
+
+  expect(result.value.attending[0].userId).toBe("u2");
+  expect(result.value.attending[1].userId).toBe("u1");
 });

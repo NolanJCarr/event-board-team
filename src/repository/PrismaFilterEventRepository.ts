@@ -47,7 +47,10 @@ export class PrismaFilterEventRepository implements IEventRepository {
       endRange.setHours(23, 59, 59, 999);
     }
 
-    const where: Record<string, unknown> = { status: "published" };
+    const where: Record<string, unknown> = { 
+      status: "published",
+      startTime: { gte: now }
+    };
     if (filter.category) {
       where.category = filter.category;
     }

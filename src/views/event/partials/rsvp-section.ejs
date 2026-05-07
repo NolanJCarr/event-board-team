@@ -1,0 +1,84 @@
+<div id="rsvp-section-<%= eventId %>"
+     x-data="{ confirming: false }"
+     x-init="$el.style.cssText='opacity:0;transform:scale(0.95)'; requestAnimationFrame(() => { $el.style.cssText='opacity:1;transform:scale(1);transition:opacity 700ms ease-out,transform 700ms ease-out' })">
+  <% if (rsvpStatus === "going") { %>
+    <div class="mt-6 flex items-center gap-4">
+      <span class="text-base font-semibold text-green-600">You're going!</span>
+      <button
+        x-show="!confirming"
+        @click="confirming = true"
+        class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700"
+      >
+        Cancel RSVP
+      </button>
+      <div x-show="confirming" class="flex items-center gap-3">
+        <span class="text-sm text-gray-600">Are you sure?</span>
+        <button
+          hx-post="/events/<%= eventId %>/rsvp"
+          hx-target="#rsvp-section-<%= eventId %>"
+          hx-swap="outerHTML"
+          class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700"
+        >
+          Yes, cancel
+        </button>
+        <button
+          @click="confirming = false"
+          class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-300"
+        >
+          Never mind
+        </button>
+      </div>
+    </div>
+  <% } else if (rsvpStatus === "waitlisted") { %>
+    <div class="mt-6 flex items-center gap-4">
+      <span class="text-sm font-semibold text-yellow-600">You've been waitlisted.</span>
+      <button
+        x-show="!confirming"
+        @click="confirming = true"
+        class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700"
+      >
+        Cancel RSVP
+      </button>
+      <div x-show="confirming" class="flex items-center gap-3">
+        <span class="text-sm text-gray-600">Are you sure?</span>
+        <button
+          hx-post="/events/<%= eventId %>/rsvp"
+          hx-target="#rsvp-section-<%= eventId %>"
+          hx-swap="outerHTML"
+          class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700"
+        >
+          Yes, cancel
+        </button>
+        <button
+          @click="confirming = false"
+          class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-300"
+        >
+          Never mind
+        </button>
+      </div>
+    </div>
+  <% } else if (rsvpStatus === "cancelled") { %>
+    <div class="mt-6 flex items-center gap-4">
+      <button
+        hx-post="/events/<%= eventId %>/rsvp"
+        hx-target="#rsvp-section-<%= eventId %>"
+        hx-swap="outerHTML"
+        class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700"
+      >
+        RSVP
+      </button>
+      <span class="text-sm font-semibold text-red-600">RSVP cancelled.</span>
+    </div>
+  <% } else { %>
+    <div class="mt-6 flex items-center gap-4">
+      <button
+        hx-post="/events/<%= eventId %>/rsvp"
+        hx-target="#rsvp-section-<%= eventId %>"
+        hx-swap="outerHTML"
+        class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700"
+      >
+        RSVP
+      </button>
+    </div>
+  <% } %>
+</div>

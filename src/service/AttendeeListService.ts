@@ -61,6 +61,7 @@ class AttendeeListService implements IAttendeeListService {
           return Err(new AttendeeListUserLookupError("(storage failure)"));
         }
         const records = rsvpResult.value;
+    
     // ── 4. Resolve display names, one lookup per unique userId ────────────────
     const nameCache = new Map<string, string>();
 
@@ -86,19 +87,33 @@ class AttendeeListService implements IAttendeeListService {
       cancelled: [],
     };
 
+    const byRsvpTime = (a: AttendeeEntry, b: AttendeeEntry) =>
+      a.rsvpedAt.getTime() - b.rsvpedAt.getTime();
+
+    const waitlistedOrdered = records
+    .filter(r => r.status === "waitlisted")
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    const waitlistPositionMap = new Map<string, number>();
+
+    waitlistedOrdered.forEach((r,index) => {
+      waitlistPositionMap.set(r.userId, index + 1);
+    });
+
     for (const record of records) {
       buckets[record.status].push({
         userId: record.userId,
         displayName: nameCache.get(record.userId)!,
         status: record.status,
         rsvpedAt: record.createdAt,
-      });
+
+        ...(record.status === "waitlisted"
+          ? {waitlistPosition: waitlistPositionMap.get(record.userId)! }
+          : {}),  
+      } as any);
     }
 
     // ── 6. Sort each bucket oldest-first ──────────────────────────────────────
-    // ISO-8601 strings are lexicographically ordered, so localeCompare is exact.
-    const byRsvpTime = (a: AttendeeEntry, b: AttendeeEntry): number =>
-      a.rsvpedAt.getTime() - b.rsvpedAt.getTime();
 
     return Ok({
       eventId,

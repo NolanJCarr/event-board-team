@@ -19,6 +19,7 @@
                                                                                                                                                                                                                 
       <p class="text-slate-600 mb-6"><%= event.description %></p>
 
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">                                                                                                                                               
         <div>
           <span class="font-semibold text-slate-700">Location:</span>                                                                                                                                           
@@ -53,33 +54,40 @@
         </div>                                                                                                                                                                                                  
       </div>
                                                                                                                                                                                                                 
-      <div class="mt-6">                                                                                                                                                                                        
-        <button
-          class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"                                                                                                                     
+    <% if (session?.authenticatedUser?.role !== "user") { %>
+    <div x-data="{ open: false}" class="mt-6">
+      <button
+        @click="open = !open"
+        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+        <span x-text="open ? 'Hide Attendees' : 'View Attendees'"></span>
+      </button>
+
+      <div x-show="open" x-transition>
+        <div
           hx-get="/events/<%= event.id %>/attendees"
-          hx-target="#attendee-list"
-          hx-swap="innerHTML"                                                                                                                                                                                   
-        >
-          View Attendees                                                                                                                                                                                        
-        </button> 
-      </div>
-
-    <div id="attendee-list" class="mt-6"></div>
-
-    <% if (session?.authenticatedUser?.role === "user") { %>
-      <div class="mt-6 flex items-center gap-4">
-        <button
-          hx-post="/events/<%= event.id %>/rsvp"
-          hx-target="#rsvp-feedback-<%= event.id %>"
+          hx-trigger="intersect once"
+          hx-target ="this"
           hx-swap="innerHTML"
-          class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-        >
-          RSVP
-        </button>
-        <div id="rsvp-feedback-<%= event.id %>"></div>
+        ></div>
+      </div>
+    </div>
+    <% } %>
+      
+    <% if (rsvpStatus === "waitlisted"){%>
+      <div class="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-yellow-100 border border-yellow-300 text-yellow-800 shadow-sm">
+        <span class="font-semibold">Waitlisted</span>
+        
+        <% if (typeof waitlistPosition !== "undefined" && waitlistPosition !== null) { %>
+          <span class="font-bold text-yellow-900">#<%= waitlistPosition %></span>
+          <span class="text-sem text-yellow-700">in queue</span>
+        <% } %>
+        
       </div>
     <% } %>
 
+    <% if (session?.authenticatedUser?.role === "user") { %>
+      <%- include("partials/rsvp-section", { rsvpStatus: rsvpStatus ?? null, eventId: event.id }) %>
+    <% } %>
   </section>
 <% } %>
 

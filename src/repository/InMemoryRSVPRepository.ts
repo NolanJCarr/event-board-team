@@ -174,6 +174,10 @@ class InMemoryRSVPRepository implements IRSVPRepository {
       return Err(UnexpectedDependencyError("Failed to compute waitlist position."));
     }
   }
+  async getWaitlist(eventId: string) {
+    const queue = this.waitlists.get(eventId) ?? [];
+    return Ok([...queue]);
+  }
 }
  
 export function CreateInMemoryRSVPRepository(): IRSVPRepository {

@@ -48,6 +48,20 @@ export interface IRSVPService {
    * past/cancelled sections. Only accessible to members (role "user").
    */
   getMyRSVPs(actor: RSVPActor, now?: Date): Promise<Result<MyRSVPsDashboard, RSVPError>>;
+
+  /**
+   * Return the user's current RSVP status for a specific event, or null if they
+   * have never RSVPed. Used to pre-load button state on the event detail page.
+   */
+  getStatusForEvent(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome | null, RSVPError>>;
+
+  /**
+   * Return a map of eventId → active RSVP status for all events where the user
+   * is currently going or waitlisted. Used to pre-load button states on the events list.
+   */
+  getUserRSVPStatuses(actor: RSVPActor): Promise<Result<Record<string, RSVPOutcome>, RSVPError>>;
+
+  getWaitlistPosition(actor:RSVPActor, eventId: string): Promise<Result<number | null, RSVPError>>;
 }
 
 class RSVPService implements IRSVPService {
@@ -79,10 +93,8 @@ class RSVPService implements IRSVPService {
       // Checks if the capacity of the event was retreived successfully
       return Err(UnexpectedDependencyError(capacityResult.value.message));
     }
-    if (capacityResult.value === null) {
-      //Another check to ensure the capacity was retreived correctly
-      return Err(EventNotFoundError(`Event ${eventId} not found.`));
-    }
+    // null means no capacity limit — treat as unlimited (event existence already confirmed above)
+    const capacity = capacityResult.value ?? Number.MAX_SAFE_INTEGER;
 
     const existingResult = await this.repository.findRSVP(actor.userId, eventId);
     if (existingResult.ok === false) {
@@ -94,15 +106,15 @@ class RSVPService implements IRSVPService {
 
     if (existing === null) {
       // Path for a brand new RSVP because there will be no existing data for the connection.
-      return this.createRSVP(actor.userId, eventId, capacityResult.value);
+      return this.createRSVP(actor.userId, eventId, capacity);
     }
 
     if (existing.status === "going" || existing.status === "waitlisted") {
-      // for the instance of if they allready are active for the RSVP it cancels it 
+      // for the instance of if they allready are active for the RSVP it cancels it
       return this.cancelRSVP(existing, eventId);
     }
     //this means they previously had a active RSVP and now it will be reactivated/created.
-    return this.createRSVP(actor.userId, eventId, capacityResult.value);
+    return this.createRSVP(actor.userId, eventId, capacity);
   }
 
   private async createRSVP(userId: string, eventId: string, capacity: number,): Promise<Result<RSVPOutcome, RSVPError>> {
@@ -219,6 +231,44 @@ class RSVPService implements IRSVPService {
     pastAndCancelled.sort((a, b) => b.event.startTime.getTime() - a.event.startTime.getTime());
 
     return Ok({ upcoming, pastAndCancelled });
+  }
+
+  async getStatusForEvent(actor: RSVPActor, eventId: string): Promise<Result<RSVPOutcome | null, RSVPError>> {
+    const result = await this.repository.findRSVP(actor.userId, eventId);
+    if (result.ok === false) {
+      return Err(UnexpectedDependencyError(result.value.message));
+    }
+    return Ok(result.value?.status ?? null);
+  }
+
+  async getUserRSVPStatuses(actor: RSVPActor): Promise<Result<Record<string, RSVPOutcome>, RSVPError>> {
+    const result = await this.repository.findAllByUser(actor.userId);
+    if (result.ok === false) {
+      return Err(UnexpectedDependencyError(result.value.message));
+    }
+    const map: Record<string, RSVPOutcome> = {};
+    for (const record of result.value) {
+      if (record.status === "going" || record.status === "waitlisted") {
+        map[record.eventId] = record.status;
+      }
+    }
+    return Ok(map);
+  }
+  
+  async getWaitlistPosition(actor: RSVPActor, eventId: string) {
+    const result = await this.repository.findAllByEvent(eventId);
+
+    if (!result.ok) {
+      return Err(UnexpectedDependencyError("Failed to load waitlist"));
+    }
+
+    const waitlist = result.value
+    .filter(r => r.status === "waitlisted")
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const index = waitlist.findIndex(r => r.userId === actor.userId);
+
+    return Ok(index === -1 ? null : index + 1);
+  
   }
 }
 

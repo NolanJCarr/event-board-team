@@ -161,6 +161,25 @@ class PrismaRSVPRepository implements IRSVPRepository {
       return Err(UnexpectedDependencyError("Failed to compute waitlist position."));
     }
   }
+
+  async getWaitlist(eventId: string) {
+    const records = await this.prisma.rSVP.findMany({
+      where: {
+        eventId,
+        status: "waitlisted",
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    return Ok(records.map(r => r.userId));
+  }
+
+
   
   async cancelAndPromote(
     userId:string,
