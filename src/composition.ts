@@ -2,6 +2,7 @@ import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
 import { CreateAuthService } from "./auth/AuthService"
 import { CreateInMemoryUserRepository, DEMO_USERS } from "./repository/InMemoryUserRepository";
+import { PrismaUserSyncRepository } from "./repository/PrismaUserSyncRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
 import type { IApp } from "./contracts";
@@ -93,18 +94,21 @@ const DEMO_EVENTS: CRUDEvent[] = [
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
 
-  // Authentication & authorization wiring
-  const authUsers = CreateInMemoryUserRepository();
-  const passwordHasher = CreatePasswordHasher();
-  const authService = CreateAuthService(authUsers, passwordHasher);
-  const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
-  const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
-
   // Prisma client initialization with better-sqlite3 adapter
   const adapter = new PrismaBetterSqlite3({
     url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
   });
   const prisma = new PrismaClient({ adapter });
+
+  // Authentication & authorization wiring.
+  // PrismaUserSyncRepository delegates auth reads/writes to the in-memory repo
+  // but also upserts new users into the Prisma User table so the RSVP FK holds.
+  const baseUserRepo = CreateInMemoryUserRepository();
+  const authUsers = new PrismaUserSyncRepository(baseUserRepo, prisma);
+  const passwordHasher = CreatePasswordHasher();
+  const authService = CreateAuthService(authUsers, passwordHasher);
+  const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
+  const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
   // Shared event repository — now using Prisma for persistence
   const sharedEventRepository = new PrismaEventRepository(prisma);
