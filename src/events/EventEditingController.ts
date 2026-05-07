@@ -108,16 +108,23 @@ class EventEditingController implements IEventEditingController {
       return;
     }
 
-    const eventResult = await this.eventService["eventRepository"].findById(eventId);
+    const eventServiceResult = await this.eventService.getEventById({
+      eventId,
+      userId: userId!,
+      role: role!
+    });
 
-    if (!eventResult) {
-      this.logger.warn(`Event not found: ${eventId}`);
-      res.status(404).render("partials/error", {
-        message: "Event not found.",
+    if (eventServiceResult.ok === false) {
+      const statusCode = eventServiceResult.value.name === "EventNotFoundError" ? 404 : 403;
+      this.logger.warn(`showEditForm failed: ${eventServiceResult.value.message}`);
+      res.status(statusCode).render("partials/error", {
+        message: eventServiceResult.value.message,
         layout: false,
       });
       return;
     }
+
+    const eventResult = eventServiceResult.value;
 
     const isOrganizer = eventResult.organizerId === userId;
     const isAdmin = role === "admin";
@@ -195,11 +202,16 @@ class EventEditingController implements IEventEditingController {
       else if (result.value.name === "UnauthorizedError") statusCode = 403;
       else if (result.value.name === "InvalidStateError") statusCode = 409;
 
-      const eventResult = await this.eventService["eventRepository"].findById(eventId);
-      if (!eventResult) {
+      const eventRefreshResult = await this.eventService.getEventById({
+        eventId,
+        userId,
+        role: role!
+      });
+      if (eventRefreshResult.ok === false) {
         res.status(404).render("partials/error", { message: "Event not found.", layout: false });
         return;
       }
+      const eventResult = eventRefreshResult.value;
 
       const errorData = {
         session,
