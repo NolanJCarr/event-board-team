@@ -69,8 +69,18 @@ class RSVPController implements IRSVPController {
         }
         return res.render("rsvp/partials/dashboard-sections", { dashboard: dashResult.value, layout: false });
       }
+
+      let waitlistPosition: number | null = null;
+      if (result.value === "waitlisted"){
+        const positionResult = await this.rsvpService.getWaitlistPosition(person, eventId);
+        
+        if (positionResult.ok){
+          waitlistPosition = positionResult.value;
+        }
+      }
       return res.render("event/partials/rsvp-section", {
         rsvpStatus: result.value,
+        waitlistPosition,
         eventId,
         layout: false,
       });
